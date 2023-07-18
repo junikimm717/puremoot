@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -90,18 +89,12 @@ func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo
 }
 
 func ForceAdmin(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
-	adminregex := regexp.MustCompile(`admin`)
 	if i.Member == nil {
 		respond(s, i, "You cannot invoke this command outside of a guild")
 		return false
 	}
-	if i.Member.Permissions&discordgo.PermissionAdministrator != 0 {
+	if i.Member.Permissions&(discordgo.PermissionAdministrator|discordgo.PermissionManageServer) != 0 {
 		return true
-	}
-	for _, role := range i.Member.Roles {
-		if adminregex.MatchString(strings.ToLower(role)) {
-			return true
-		}
 	}
 	respond(s, i, "You do not have an administrator role! Permission Denied")
 	return false

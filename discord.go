@@ -15,7 +15,6 @@ type Pair[T any] struct {
 	Value T
 }
 
-// TODO: implement this
 func PureMOOt[T any](arr []T) [][]T {
 	pairs := make([]Pair[T], len(arr))
 	for idx := 0; idx < len(pairs); idx++ {
@@ -27,33 +26,6 @@ func PureMOOt[T any](arr []T) [][]T {
 	res := make([][]T, 0)
 	for idx := 0; idx+1 < len(pairs); idx += 2 {
 		res = append(res, []T{pairs[idx].Value, pairs[idx+1].Value})
-	}
-	return res
-}
-
-func NickNameLength(m *discordgo.Member) int {
-	if len(m.Nick) > 0 {
-		return len(m.Nick)
-	} else {
-		return len(m.User.Username)
-	}
-}
-
-func respond(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: message,
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-}
-
-func extractInteractionOptions(i *discordgo.InteractionCreate) map[string]*discordgo.ApplicationCommandInteractionDataOption {
-	options := i.ApplicationCommandData().Options
-	res := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
-	for _, opt := range options {
-		res[opt.Name] = opt
 	}
 	return res
 }
@@ -86,18 +58,6 @@ func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo
 		}
 	}
 	return cows, nil
-}
-
-func ForceAdmin(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
-	if i.Member == nil {
-		respond(s, i, "You cannot invoke this command outside of a guild")
-		return false
-	}
-	if i.Member.Permissions&(discordgo.PermissionAdministrator|discordgo.PermissionManageServer) != 0 {
-		return true
-	}
-	respond(s, i, "You do not have an administrator role! Permission Denied")
-	return false
 }
 
 var (
@@ -143,22 +103,8 @@ var (
 				respond(s, i, "Message successfully broadcasted!")
 			}
 		},
-		"cows": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !ForceAdmin(s, i) {
-				return
-			}
-			cows, err := getCows(s, i)
-			if err != nil {
-				respond(s, i, fmt.Sprintf("Error getting cows! %v", err))
-			}
-			cowids := make([]string, len(cows))
-			for idx, cow := range cows {
-				cowids[idx] = cow.User.ID
-			}
-			respond(s, i, fmt.Sprintf("Cows: %v", strings.Join(cowids, ",")))
-		},
 		"puremoot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !ForceAdmin(s, i) {
+			if !forceAdmin(s, i) {
 				return
 			}
 			cows, err := getCows(s, i)
@@ -174,7 +120,7 @@ var (
 			})
 			puremootation := PureMOOt(cows)
 			for _, pair := range puremootation {
-				num_spaces := 70 - (NickNameLength(pair[0]) + NickNameLength(pair[1]))
+				num_spaces := 70 - (nickNameLength(pair[0]) + nickNameLength(pair[1]))
 				prefix_spaces := 1 + rand.Intn(num_spaces-1)
 				s.ChannelMessageSend(
 					i.ChannelID,

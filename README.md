@@ -1,6 +1,6 @@
-# A Clean Permoot
+# PureMOOt
 
-Tea Shop (Unofficial MOP 2022 Server) has a discord bot named permoot that is
+Tea Shop (Unofficial MOP 2022 Server) has a discord bot named perMOOt that is
 moderately useful but extremely annoying. In particular, it instantly replies
 "carefully" to any message starting with "how" and will change a person's
 nickname every time there is an "im" in their message (E.g. "somet**im**e soon",
@@ -10,12 +10,12 @@ This is a nerfed version of permoot for Lemonade Shop (Unofficial MOP 2023
 Server) that aims to do exactly two things:
 
 1. Let people anonymously broadcast messages
-2. Issue "permootations" to encourage people to get to know each other through
-   DM's.
+2. Issue "pureMOOtations" to encourage people to start private conversations
+   and make new friends.
 
 # Setup
 
-1. [Invite the bot](https://discord.com/api/oauth2/authorize?client_id=1130681299288477728&permissions=8&scope=bot) 
+1. The bot is invited
 2. Create a role called "cow"; members who have this role will be paired up in a
    puremootation.
 3. Users of the `/puremoot` command must either have the administrator

@@ -31,12 +31,12 @@ func PureMOOt[T any](arr []T) [][]T {
 }
 
 func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo.Member, error) {
-	members, err := s.GuildMembers(i.GuildID, "", 300)
+	cow_role_id := ""
+	roles, err := s.GuildRoles(i.GuildID)
 	if err != nil {
 		return []*discordgo.Member{}, err
 	}
-	cow_role_id := ""
-	roles, err := s.GuildRoles(i.GuildID)
+	members, err := s.GuildMembers(i.GuildID, "", 800)
 	if err != nil {
 		return []*discordgo.Member{}, err
 	}
@@ -110,8 +110,8 @@ var (
 			options := extractInteractionOptions(i)
 			day := options["day"].IntValue()
 			s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
-				Title:       fmt.Sprintf("PureMOOtation day %v", day),
-				Description: "PureMOOt has assigned random pairs of MOOpers to contact each other! Make New Friends!",
+				Title:       fmt.Sprintf("pureMOOtation Day %v", day),
+				Description: "pureMOOt has assigned random pairs of MOOpers to contact each other! Make new friends!",
 				Color:       0xFFD700,
 			})
 			puremootation := PureMOOt(cows)
@@ -122,14 +122,14 @@ var (
 					i.ChannelID,
 					fmt.Sprintf(
 						"||%v<@%v> <@%v>%v||",
-						strings.Repeat(" ", prefix_spaces),
+						strings.Repeat(" ", 2*prefix_spaces),
 						pair[0].User.ID,
 						pair[1].User.ID,
-						strings.Repeat(" ", num_spaces-prefix_spaces),
+						strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
 					),
 				)
 			}
-			respond(s, i, "Success.")
+			respond(s, i, "pureMOOtation successfully generated!")
 		},
 	}
 )

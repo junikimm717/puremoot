@@ -88,10 +88,6 @@ var (
 				},
 			},
 		},
-		{
-			Name:        "cows",
-			Description: "commmand to see all cows on the server",
-		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {

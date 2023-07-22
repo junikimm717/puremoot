@@ -18,10 +18,15 @@ Server) that aims to do exactly two things:
 1. The bot is invited
 2. Create a role called "cow"; members who have this role will be paired up in a
    puremootation.
-3. Users of the `/puremoot` command must either have the administrator
-   permission or have a role that contains the substring "admin"
+3. Users of the `/puremoot` command must either have the administrator or
+   "manage server" permission.
 
 # Commands
 
 - `/broadcast [message]` - anonymously broadcast a message.
 - `/puremoot [day number]` (Admins only) - generate a puremootation.
+
+# Acknowledgements
+
+- Advaith Avadhanam, Lemonade Shop Dictator
+- Emily Yu, for designing the logo

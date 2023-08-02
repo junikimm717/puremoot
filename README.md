@@ -19,7 +19,7 @@ Server) that aims to do exactly two things:
 2. Create a role called "cow"; members who have this role will be paired up in a
    puremootation.
 3. Users of the `/puremoot` command must either have the administrator or
-   "manage server" permission.
+   "view audit log" permission.
 
 # Commands
 

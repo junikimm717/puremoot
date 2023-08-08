@@ -106,30 +106,38 @@ var (
 			cows, err := getCows(s, i)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Error getting cows! %v", err))
+        return
 			}
+
+      // send an embed explaining what to do
 			options := extractInteractionOptions(i)
 			day := options["day"].IntValue()
-			s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
+			_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
 				Title:       fmt.Sprintf("pureMOOtation Day %v", day),
 				Description: "pureMOOt has assigned random pairs of MOOpers to contact each other! Make new friends!",
 				Color:       0xFFD700,
 			})
+      if err != nil {
+			  respond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
+        return
+      }
+
+			respond(s, i, "pureMOOtation generated!")
 			puremootation := PureMOOt(cows)
 			for _, pair := range puremootation {
 				num_spaces := 70 - (nickNameLength(pair[0]) + nickNameLength(pair[1]))
 				prefix_spaces := 1 + rand.Intn(num_spaces-1)
-				s.ChannelMessageSend(
-					i.ChannelID,
-					fmt.Sprintf(
-						"||%v<@%v> <@%v>%v||",
-						strings.Repeat(" ", 2*prefix_spaces),
-						pair[0].User.ID,
-						pair[1].User.ID,
-						strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
-					),
-				)
+        s.ChannelMessageSend(
+          i.ChannelID,
+          fmt.Sprintf(
+              "||%v<@%v> <@%v>%v||",
+              strings.Repeat(" ", 2*prefix_spaces),
+              pair[0].User.ID,
+              pair[1].User.ID,
+              strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
+          ),
+        )
 			}
-			respond(s, i, "pureMOOtation successfully generated!")
 		},
 	}
 )

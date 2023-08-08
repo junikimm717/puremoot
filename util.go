@@ -36,7 +36,8 @@ func forceAdmin(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
 		respond(s, i, "You cannot invoke this command outside of a guild")
 		return false
 	}
-	if i.Member.Permissions&(discordgo.PermissionAdministrator|discordgo.PermissionViewAuditLogs) != 0 {
+  manage_audit := int64(discordgo.PermissionManageServer|discordgo.PermissionViewAuditLogs)
+	if (i.Member.Permissions&(discordgo.PermissionAdministrator) != 0) || (i.Member.Permissions&manage_audit) == manage_audit {
 		return true
 	}
 	respond(s, i, "You do not have an administrator role! Permission Denied")

@@ -114,7 +114,7 @@ var (
 			day := options["day"].IntValue()
 			_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
 				Title:       fmt.Sprintf("pureMOOtation Day %v", day),
-				Description: "pureMOOt has assigned random pairs of MOOpers to contact each other! Make new friends!",
+				Description: "pureMOOt has assigned random pairs of Cows to contact each other! Make new friends!",
 				Color:       0xFFD700,
 			})
       if err != nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -92,7 +93,13 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := extractInteractionOptions(i)
-			_, err := s.ChannelMessageSend(i.ChannelID, "[broadcast] "+options["message"].StringValue())
+			pingRegex := regexp.MustCompile(`<@&?\d+>|@[0-9,a-z,A-Z]+`)
+			message := options["message"].StringValue()
+			if pingRegex.Match([]byte(message)) {
+				respond(s, i, "Broadcast refused! Message contains a ping!")
+				return
+			}
+			_, err := s.ChannelMessageSend(i.ChannelID, "[broadcast] "+message)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
 			} else {
@@ -106,10 +113,10 @@ var (
 			cows, err := getCows(s, i)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Error getting cows! %v", err))
-        return
+				return
 			}
 
-      // send an embed explaining what to do
+			// send an embed explaining what to do
 			options := extractInteractionOptions(i)
 			day := options["day"].IntValue()
 			_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
@@ -117,26 +124,26 @@ var (
 				Description: "pureMOOt has assigned random pairs of Cows to contact each other! Make new friends!",
 				Color:       0xFFD700,
 			})
-      if err != nil {
-			  respond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
-        return
-      }
+			if err != nil {
+				respond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
+				return
+			}
 
 			respond(s, i, "pureMOOtation generated!")
 			puremootation := PureMOOt(cows)
 			for _, pair := range puremootation {
 				num_spaces := 70 - (nickNameLength(pair[0]) + nickNameLength(pair[1]))
 				prefix_spaces := 1 + rand.Intn(num_spaces-1)
-        s.ChannelMessageSend(
-          i.ChannelID,
-          fmt.Sprintf(
-              "||%v<@%v> <@%v>%v||",
-              strings.Repeat(" ", 2*prefix_spaces),
-              pair[0].User.ID,
-              pair[1].User.ID,
-              strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
-          ),
-        )
+				s.ChannelMessageSend(
+					i.ChannelID,
+					fmt.Sprintf(
+						"||%v<@%v> <@%v>%v||",
+						strings.Repeat(" ", 2*prefix_spaces),
+						pair[0].User.ID,
+						pair[1].User.ID,
+						strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
+					),
+				)
 			}
 		},
 	}

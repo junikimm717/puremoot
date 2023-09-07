@@ -13,6 +13,7 @@ import (
 
 var (
 	dg *discordgo.Session
+	db *Database
 )
 
 var (
@@ -45,11 +46,29 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
+	db = InitDatabase()
 	log.Println("Adding commands...")
+	commands_list := map[string]int{}
 	for _, v := range commands {
 		_, err := dg.ApplicationCommandCreate(dg.State.User.ID, "", v)
+		log.Println("Adding", v.Name)
 		if err != nil {
 			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+		}
+		commands_list[v.Name] = 1
+	}
+	// remove any commands that are not part of our list.
+	all_commands, err := dg.ApplicationCommands(dg.State.User.ID, "")
+	if err != nil {
+		log.Panicf("Cannot get Application Commands: %v", err)
+	}
+	for _, v := range all_commands {
+		if commands_list[v.Name] != 1 {
+			err := dg.ApplicationCommandDelete(dg.State.User.ID, "", v.ID)
+			if err != nil {
+				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
+			}
+			log.Printf("Deleting extraneous command: %v", v.Name)
 		}
 	}
 	// code for waiting for websocket to close.

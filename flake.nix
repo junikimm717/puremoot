@@ -16,7 +16,7 @@
         name = "Clean Permoot";
       in {
 
-        devShell = pkgs.mkShell { buildInputs = with pkgs; [ go gopls scc ]; };
+        devShell = pkgs.mkShell { buildInputs = with pkgs; [ go gopls scc redis ]; };
 
         defaultPackage = pkgs.stdenv.mkDerivation { inherit name version; };
 

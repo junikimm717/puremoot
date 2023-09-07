@@ -89,6 +89,14 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "mybroadcastid",
+			Description: "Returns your broadcast ID on this channel",
+		},
+		{
+			Name:        "regenerate",
+			Description: "Regenerate a broadcast Id",
+		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -99,11 +107,33 @@ var (
 				respond(s, i, "Broadcast refused! Message contains a ping!")
 				return
 			}
-			_, err := s.ChannelMessageSend(i.ChannelID, "[broadcast] "+message)
+			if i.Member == nil {
+				respond(s, i, "[developer] The i.Member field is not present. Cannot broadcast!")
+			}
+			message, id := db.BroadcastMessage(i.Member.User.ID, i.ChannelID, message)
+			_, err := s.ChannelMessageSend(i.ChannelID, message)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
 			} else {
-				respond(s, i, "Message successfully broadcasted!")
+				respond(s, i, fmt.Sprintf("Message successfully broadcasted! Your ID is %v", id))
+			}
+		},
+		"regenerate": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.Member == nil {
+				respond(s, i, "[developer] The i.Member field is not present. Aborted")
+			}
+			id := db.CreateBroadcastId(i.Member.User.ID, i.ChannelID)
+			respond(s, i, fmt.Sprintf("ID successfully regenerated! Your ID is %v", id))
+		},
+		"mybroadcastid": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.Member == nil {
+				respond(s, i, "[developer] The i.Member field is not present. Aborted")
+			}
+			id, exists := db.GetString(db.userChannelKey(i.Member.User.ID, i.ChannelID))
+			if !exists {
+				respond(s, i, fmt.Sprintf("You have not been assigned a Broadcast ID on this channel."))
+			} else {
+				respond(s, i, fmt.Sprintf("Your ID is %v", id))
 			}
 		},
 		"puremoot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {

@@ -315,7 +315,7 @@ var (
 
 			s.ChannelMessageSend(
 				i.ChannelID,
-				fmt.Sprintf("Top 20 in Reaper Round %v (Requested by <@%v>):\n", leaderboardgameid, i.Member.User.ID)+strings.Join(usernamescoreitem, "\n"),
+				fmt.Sprintf("Top 20 in Reaper Round %v:\n", leaderboardgameid)+strings.Join(usernamescoreitem, "\n"),
 			)
 		},
 		"getscore": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {

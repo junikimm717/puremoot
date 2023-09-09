@@ -93,6 +93,11 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
+					Name:        "last2reap",
+					Description: "Return the last person who reaped in the current game of reaper",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
 					Name:        "current",
 					Description: "Show the currently active game of reaper on this channel",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -122,7 +127,16 @@ var (
 				{
 					Name:        "cancel",
 					Description: "CAREFUL!!!! This will permanently de-activate any ongoing reaper game on this channel! (Admin Only)",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Name:        "gameid",
+							Description: "ID of the reaper round (confirmation purposes)",
+							Required:    true,
+							MinValue:    &minValue,
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 			},
 		},
@@ -170,6 +184,10 @@ var (
 			}
 		},
 		"reapergame": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.Member == nil {
+				respond(s, i, "i.Member field not present. Cannot proceed")
+				return
+			}
 			options := i.ApplicationCommandData().Options
 			handler, exists := reaperHandlers[options[0].Name]
 			if !exists {
@@ -297,7 +315,7 @@ var (
 
 			s.ChannelMessageSend(
 				i.ChannelID,
-				fmt.Sprintf("Top 20 in Reaper Round %v:\n", leaderboardgameid)+strings.Join(usernamescoreitem, "\n"),
+				fmt.Sprintf("Top 20 in Reaper Round %v (Requested by <@%v>):\n", leaderboardgameid, i.Member.User.ID)+strings.Join(usernamescoreitem, "\n"),
 			)
 		},
 		"getscore": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -341,7 +359,13 @@ var (
 			if !forceAdmin(s, i) {
 				return
 			}
-			gameId, deleted := db.CancelReaper(i.ChannelID)
+			options := extractInteractionOptions(opts)
+			gameid, _ := db.CurrentReaperId(i.ChannelID)
+			if gameid != int(options["gameid"].IntValue()) {
+				respond(s, i, "Confirmation failed. Game has not been cancelled.")
+				return
+			}
+			gameid, deleted := db.CancelReaper(i.ChannelID)
 			if !deleted {
 				respond(s, i, "There is no active game of reaper!")
 				return
@@ -349,7 +373,7 @@ var (
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Reaper Round %v has been cancelled by the admins! Very 1428!", gameId),
+					Content: fmt.Sprintf("Reaper Round %v has been cancelled by the admins! Very 1428!", gameid),
 				},
 			})
 		},
@@ -367,6 +391,30 @@ var (
 				return
 			}
 			respond(s, i, fmt.Sprintf("Reaper Round %v is active!", gameId))
+		},
+		"last2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+			gameid, active := db.CurrentReaperId(i.ChannelID)
+			if !active {
+				if gameid == 1 {
+					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v round has been played.", gameid))
+				} else {
+					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v rounds have been played.", gameid))
+				}
+				return
+			}
+			lastreaper, lastreaptime := db.LastToReap(i.ChannelID, gameid)
+			user, err := dg.User(lastreaper)
+			username := "<nonexistent user>"
+			if err != nil {
+				log.Println(err)
+			} else {
+				username = user.Username
+			}
+			respond(
+				s,
+				i,
+				fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
+			)
 		},
 	}
 )

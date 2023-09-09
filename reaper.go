@@ -255,7 +255,6 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	if !running {
 		return ReapOutput{}, errors.New("There is no active game of reaper. Ask the admins.")
 	}
-	_, lastreaptime := d.LastToReap(channelid, gameid)
 	// removed for testing purposes.
 	lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
 	if userid == lastreaper {
@@ -272,7 +271,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{}, errors.New(
 				fmt.Sprintf(
 					"You may not reap again until %v",
-					time.UnixMilli(userlastreap+cooldown*1000).Format("Mon Jan 2 15:04:05 MST 2006"),
+					fmt.Sprintf("<t:%v>", userlastreap+cooldown),
 				),
 			)
 		}
@@ -329,14 +328,14 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{
 				MilliSeconds: score,
 				Winner:       &winner,
-				ReapAgain:    time.UnixMilli(timenow.UnixMilli() + cooldown*1000).Format("Mon Jan 2 15:04:05 MST 2006"),
+				ReapAgain:    fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
 				GameId:       gameid,
 			}, nil
 		}
 	}
 	return ReapOutput{
 		MilliSeconds: score,
-		ReapAgain:    time.UnixMilli(timenow.UnixMilli() + cooldown*1000).Format("Mon Jan 2 15:04:05 MST 2006"),
+		ReapAgain:    fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
 		GameId:       gameid,
 	}, nil
 }

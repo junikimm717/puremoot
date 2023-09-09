@@ -77,6 +77,7 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	log.Println("Press Ctrl+C to exit")
 	<-stop
+	db.client.Save(ctx).Err()
 	if *cleanup {
 		// remove all commands.
 		commands, err := dg.ApplicationCommands(dg.State.User.ID, "")

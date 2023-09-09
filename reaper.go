@@ -271,7 +271,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{}, errors.New(
 				fmt.Sprintf(
 					"You may not reap again until %v",
-					fmt.Sprintf("<t:%v>", userlastreap+cooldown),
+					fmt.Sprintf("<t:%v>", (userlastreap+cooldown)/1000),
 				),
 			)
 		}

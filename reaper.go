@@ -358,8 +358,12 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	timenow := time.Now()
 	score := timenow.UnixMilli() - lastreaptime
 
-	multiplier, message := Multiplier()
-	score *= multiplier
+	message := "." // a period is included because some messages have punctuation.
+	if score < 3600 {
+		multiplier, m := Multiplier()
+		score *= multiplier
+		message = m
+	}
 
 	// add it to the streams.
 	err = d.client.XAdd(ctx, &redis.XAddArgs{

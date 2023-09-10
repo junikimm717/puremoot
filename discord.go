@@ -320,7 +320,7 @@ var (
 			ranks := []string{}
 			scores := []string{}
 			for rank, item := range leaderboard {
-				ranks = append(usernames, fmt.Sprintf("%v.", rank+1))
+				ranks = append(ranks, fmt.Sprintf("%v.", rank+1))
 				usernames = append(usernames, fmt.Sprintf("%v", item.Username))
 				scores = append(scores, fmt.Sprintf("%v seconds", item.Score))
 			}

@@ -359,7 +359,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	score := timenow.UnixMilli() - lastreaptime
 
 	message := "." // a period is included because some messages have punctuation.
-	if score < 3600 {
+	if score < 3600*1000 {
 		multiplier, m := Multiplier()
 		score *= multiplier
 		message = m

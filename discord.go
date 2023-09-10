@@ -166,7 +166,13 @@ var (
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("%v reaped for %v. Can reap again at %v", i.Member.User.Username, milliToTime(score.MilliSeconds), score.ReapAgain),
+					Content: fmt.Sprintf(
+						"%v reaped for %v%v Can reap again at %v",
+						i.Member.User.Username,
+						milliToTime(score.MilliSeconds),
+						score.MultiplierMessage,
+						score.ReapAgain,
+					),
 				},
 			})
 			if score.Winner != nil {

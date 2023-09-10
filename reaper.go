@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -258,10 +260,58 @@ func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
 }
 
 type ReapOutput struct {
-	MilliSeconds int64
-	ReapAgain    string
-	Winner       *string
-	GameId       int
+	MilliSeconds      int64
+	ReapAgain         string
+	MultiplierMessage string
+	Winner            *string
+	GameId            int
+}
+
+func Multiplier() (int64, string) {
+	number, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		panic(err)
+	}
+	multipliers := []struct {
+		Prob    int
+		Mult    int64
+		Message string
+	}{
+		// all probabilities are out of 1000
+		{
+			Prob:    1,
+			Mult:    8,
+			Message: "**Ultra Rare Octuple Reap!**",
+		},
+		{
+			Prob:    5,
+			Mult:    5,
+			Message: "**Rare Quintuple Reap!**",
+		},
+		{
+			Prob:    10,
+			Mult:    4,
+			Message: "**Quadruple Reap!**",
+		},
+		{
+			Prob:    40,
+			Mult:    3,
+			Message: "**Triple Reap!**",
+		},
+		{
+			Prob:    40,
+			Mult:    2,
+			Message: "**Double Reap!**",
+		},
+	}
+	sum := 0
+	for _, m := range multipliers {
+		if sum <= int(number.Int64()) && int(number.Int64()) < m.Prob {
+			return m.Mult, " " + m.Message
+		}
+		sum += m.Prob
+	}
+	return 1, "."
 }
 
 func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
@@ -270,10 +320,13 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 		return ReapOutput{}, errors.New("There is no active game of reaper. Ask the admins.")
 	}
 	// removed for testing purposes.
-	lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
-	if userid == lastreaper {
-		return ReapOutput{}, errors.New("You were the last person to reap.")
-	}
+	//lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
+	_, lastreaptime := d.LastToReap(channelid, gameid)
+	/*
+		if userid == lastreaper {
+			return ReapOutput{}, errors.New("You were the last person to reap.")
+		}
+	*/
 
 	/*
 		!!!!! userlastreap is in unix milliseconds
@@ -304,6 +357,10 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	// calculate reaper score
 	timenow := time.Now()
 	score := timenow.UnixMilli() - lastreaptime
+
+	multiplier, message := Multiplier()
+	score *= multiplier
+
 	// add it to the streams.
 	err = d.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: fmt.Sprintf("reaper:%v:%v:reaplog", channelid, gameid),
@@ -340,16 +397,18 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			}
 			winner := leader.Member.(string)
 			return ReapOutput{
-				MilliSeconds: score,
-				Winner:       &winner,
-				ReapAgain:    fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
-				GameId:       gameid,
+				MilliSeconds:      score,
+				Winner:            &winner,
+				ReapAgain:         fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
+				GameId:            gameid,
+				MultiplierMessage: message,
 			}, nil
 		}
 	}
 	return ReapOutput{
-		MilliSeconds: score,
-		ReapAgain:    fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
-		GameId:       gameid,
+		MilliSeconds:      score,
+		ReapAgain:         fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
+		GameId:            gameid,
+		MultiplierMessage: message,
 	}, nil
 }

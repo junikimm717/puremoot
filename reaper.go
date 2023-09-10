@@ -243,6 +243,20 @@ func (d *Database) CancelReaper(channelid string) (int, bool) {
 	return gameid, true
 }
 
+func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
+	gameid, running := d.CurrentReaperId(channelid)
+	if !running {
+		return 0, errors.New("There is no active game of reaper. Ask the admins.")
+	}
+	userlastreap, didreap := d.LastReapTimeForUser(channelid, gameid, userid)
+	cooldown := d.GetCooldown(channelid, gameid)
+	if didreap {
+		return (userlastreap)/1000 + cooldown, nil
+	} else {
+		return 0, nil
+	}
+}
+
 type ReapOutput struct {
 	MilliSeconds int64
 	ReapAgain    string

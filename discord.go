@@ -98,6 +98,11 @@ var (
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
+					Name:        "when2reap",
+					Description: "Return when you can reap next",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
 					Name:        "current",
 					Description: "Show the currently active game of reaper on this channel",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -295,8 +300,8 @@ var (
 					respond(s, i, "No active game of reaper!")
 					return
 				}
-				b, err := db.GetLeaderBoard(i.ChannelID, currentid)
 				respond(s, i, "Message Received! Compiling Leaderboard...")
+				b, err := db.GetLeaderBoard(i.ChannelID, currentid)
 				if err != nil {
 					s.ChannelMessageSend(
 						i.ChannelID,
@@ -308,17 +313,33 @@ var (
 				leaderboardgameid = int64(currentid)
 			}
 
-			usernamescoreitem := []string{}
+			wincond := db.GetWincond(i.ChannelID, int(leaderboardgameid))
+			cooldown := db.GetCooldown(i.ChannelID, int(leaderboardgameid))
+
+			usernames := []string{}
+			ranks := []string{}
+			scores := []string{}
 			for rank, item := range leaderboard {
-				usernamescoreitem = append(usernamescoreitem, fmt.Sprintf("%v. %v: %v seconds", rank+1, item.Username, item.Score))
+				ranks = append(usernames, fmt.Sprintf("%v.", rank+1))
+				usernames = append(usernames, fmt.Sprintf("%v", item.Username))
+				scores = append(scores, fmt.Sprintf("%v seconds", item.Score))
 			}
 
-			s.ChannelMessageSend(
-				i.ChannelID,
-				fmt.Sprintf("Top 20 in Reaper Round %v:\n", leaderboardgameid)+strings.Join(usernamescoreitem, "\n"),
-			)
+			_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
+				Title:       fmt.Sprintf("Reaper Round %v", leaderboardgameid),
+				Description: fmt.Sprintf("The Top 20 Leaderboard | **%v** seconds to win | **%v** seconds between reaps", wincond, cooldown),
+				Fields: []*discordgo.MessageEmbedField{
+					{Name: "Rank", Value: strings.Join(ranks, "\n"), Inline: true},
+					{Name: "Username", Value: strings.Join(usernames, "\n"), Inline: true},
+					{Name: "Score", Value: strings.Join(scores, "\n"), Inline: true},
+				},
+				Color: 0xFFD700,
+			})
+			if err != nil {
+				respond(s, i, fmt.Sprintf("Error Sending Message! %v", err.Error()))
+			}
 		},
-		"getscore": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		"score": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 			options := extractInteractionOptions(opts)
 			user := options["user"].UserValue(s)
 			gameid := options["gameid"].IntValue()
@@ -415,6 +436,21 @@ var (
 				i,
 				fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
 			)
+		},
+		"when2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+			time, err := db.When2Reap(i.Member.User.ID, i.ChannelID)
+			if err != nil {
+				respond(s, i, err.Error())
+			}
+			if time == 0 {
+				respond(s, i, "You haven't reaped yet. Go ahead!")
+			} else {
+				respond(
+					s,
+					i,
+					fmt.Sprintf("You may reap at <t:%v>", time),
+				)
+			}
 		},
 	}
 )

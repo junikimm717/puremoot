@@ -322,7 +322,7 @@ var (
 			for rank, item := range leaderboard {
 				ranks = append(ranks, fmt.Sprintf("%v.", rank+1))
 				usernames = append(usernames, fmt.Sprintf("%v", item.Username))
-				scores = append(scores, fmt.Sprintf("%v seconds", item.Score))
+				scores = append(scores, fmt.Sprintf("%.3f seconds", item.Score))
 			}
 
 			_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{

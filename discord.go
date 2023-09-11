@@ -176,12 +176,9 @@ var (
 				},
 			})
 			if score.Winner != nil {
-				user, err := dg.User(*(score.Winner))
-				username := "<nonexistent user>"
-				if err != nil {
+				username, err := db.UsernameFromId(*(score.Winner))
+				if username == "" || err != nil {
 					log.Println(err)
-				} else {
-					username = user.Username
 				}
 				_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
 					Title:       fmt.Sprintf("%v Wins Reaper Round %v!", username, score.GameId),
@@ -430,12 +427,9 @@ var (
 				return
 			}
 			lastreaper, lastreaptime := db.LastToReap(i.ChannelID, gameid)
-			user, err := dg.User(lastreaper)
-			username := "<nonexistent user>"
+			username, err := db.UsernameFromId(lastreaper)
 			if err != nil {
 				log.Println(err)
-			} else {
-				username = user.Username
 			}
 			respond(
 				s,

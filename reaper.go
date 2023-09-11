@@ -136,10 +136,10 @@ func (d *Database) GetLeaderBoard(channelid string, gameid int) ([]LeaderBoardIt
 	}
 	res := make([]LeaderBoardItem, 0)
 	for _, leader := range leaders {
-		user, err := dg.User(leader.Member.(string))
-		if err == nil {
+		username, err := d.UsernameFromId(leader.Member.(string))
+		if username != "" && err == nil {
 			res = append(res, LeaderBoardItem{
-				Username: user.Username,
+				Username: username,
 				Score:    leader.Score,
 			})
 		}
@@ -248,7 +248,7 @@ func (d *Database) CancelReaper(channelid string) (int, bool) {
 func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
 	gameid, running := d.CurrentReaperId(channelid)
 	if !running {
-		return 0, errors.New("There is no active game of reaper. Ask the admins.")
+		return 0, errors.New("There is no active game of reaper on this channel. Ask the admins.")
 	}
 	userlastreap, didreap := d.LastReapTimeForUser(channelid, gameid, userid)
 	cooldown := d.GetCooldown(channelid, gameid)
@@ -336,8 +336,8 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	if didreap {
 		if userlastreap+cooldown*1000 > time.Now().UnixMilli() {
 			return ReapOutput{}, fmt.Errorf(
-					"You may not reap again until %v",
-					fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
+				"You may not reap again until %v",
+				fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
 			)
 		}
 	}

@@ -2,36 +2,15 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 var ctx = context.Background()
-var letters = []byte{}
-
-func init() {
-	for i := 0; i < 26; i++ {
-		letters = append(letters, byte(65+i))
-		letters = append(letters, byte(97+i))
-	}
-}
-
-func randomId() string {
-	id := []byte{}
-	for i := 0; i < 6; i++ {
-		nBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
-		if err != nil {
-			panic(err)
-		}
-		id = append(id, letters[nBig.Int64()])
-	}
-	return string(id)
-}
 
 type Database struct {
 	client *redis.Client
@@ -53,10 +32,6 @@ func InitDatabase() *Database {
 	}
 }
 
-func (d *Database) userChannelKey(user string, channel string) string {
-	return fmt.Sprintf("%v-%v", user, channel)
-}
-
 func (d *Database) GetString(key string) (string, bool) {
 	val, err := d.client.Get(ctx, key).Result()
 	if err == redis.Nil {
@@ -74,16 +49,20 @@ func (d *Database) SetString(key string, val string) {
 	}
 }
 
-func (d *Database) CreateBroadcastId(user string, channel string) string {
-	id := randomId()
-	d.SetString(d.userChannelKey(user, channel), id)
-	return id
-}
-
-func (d *Database) BroadcastMessage(user string, channel string, message string) (string, string) {
-	id, exists := d.GetString(d.userChannelKey(user, channel))
+func (d *Database) UsernameFromId(id string) (string, error) {
+	username, exists := d.GetString(fmt.Sprintf("userid:%v", id))
 	if !exists {
-		id = d.CreateBroadcastId(user, channel)
+		user, err := dg.User(id)
+		if err != nil {
+			return "<nonexistent user>", err
+		}
+		username = user.Username
+		cache_time, err := time.ParseDuration("24h")
+		// should never happen.
+		if err != nil {
+			panic(err)
+		}
+		d.client.Set(ctx, fmt.Sprintf("userid:%v", id), username, cache_time)
 	}
-	return fmt.Sprintf("[broadcast:**%v**] %v", id, message), id
+	return username, nil
 }

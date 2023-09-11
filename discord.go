@@ -72,7 +72,7 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "getscore",
+					Name:        "score",
 					Description: "Get the score of a user on a reaper round on this channel",
 					Options: []*discordgo.ApplicationCommandOption{
 						{

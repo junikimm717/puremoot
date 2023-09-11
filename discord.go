@@ -199,7 +199,8 @@ var (
 			options := i.ApplicationCommandData().Options
 			handler, exists := reaperHandlers[options[0].Name]
 			if !exists {
-				panic("Shouldn't happen.")
+				respond(s, i, "Invalid Command given")
+				return
 			}
 			handler(s, i, options[0].Options)
 		},

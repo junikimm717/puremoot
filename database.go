@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"time"
 
@@ -51,7 +53,13 @@ func (d *Database) SetString(key string, val string) {
 
 func (d *Database) UsernameFromId(id string) (string, error) {
 	username, exists := d.GetString(fmt.Sprintf("userid:%v", id))
-	if !exists {
+	number, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		// should never happen.
+		panic(err)
+	}
+	// randomly re-validate usernames 8% of the time
+	if !exists || number.Int64() < int64(80) {
 		user, err := dg.User(id)
 		if err != nil {
 			return "<nonexistent user>", err

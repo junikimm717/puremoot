@@ -298,7 +298,7 @@ func Multiplier() (int64, string) {
 	}
 	sum := 0
 	for _, m := range multipliers {
-		if sum <= int(number.Int64()) && int(number.Int64()) < m.Prob {
+		if sum <= int(number.Int64()) && int(number.Int64()) < sum+m.Prob {
 			return m.Mult, " " + m.Message
 		}
 		sum += m.Prob
@@ -320,13 +320,11 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 		return ReapOutput{}, errors.New("There is no active game of reaper. Ask the admins.")
 	}
 	// removed for testing purposes.
-	//lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
-	_, lastreaptime := d.LastToReap(channelid, gameid)
-	/*
-		if userid == lastreaper {
-			return ReapOutput{}, errors.New("You were the last person to reap.")
-		}
-	*/
+	//_, lastreaptime := d.LastToReap(channelid, gameid)
+	lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
+	if userid == lastreaper {
+		return ReapOutput{}, errors.New("You were the last person to reap.")
+	}
 
 	/*
 		!!!!! userlastreap is in unix milliseconds

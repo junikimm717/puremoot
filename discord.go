@@ -55,7 +55,7 @@ var (
 		{
 			Name:        "reapergame",
 			Description: "Command for all functions related to reaper!",
-			Options: *&[]*discordgo.ApplicationCommandOption{
+			Options: []*discordgo.ApplicationCommandOption{
 
 				{
 					Name:        "leaderboard",
@@ -283,7 +283,7 @@ var (
 		"leaderboard": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 			options := extractInteractionOptions(opts)
 			currentid, activegame := db.CurrentReaperId(i.ChannelID)
-			leaderboard := []LeaderBoardItem{}
+			var leaderboard []LeaderBoardItem
 			leaderboardgameid := int64(0)
 			if gameid, ok := options["gameid"]; ok {
 				if currentid == 0 || gameid.IntValue() > int64(currentid) {

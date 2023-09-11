@@ -74,7 +74,7 @@ func main() {
 	// code for waiting for websocket to close.
 	defer dg.Close()
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, os.Interrupt)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	log.Println("Press Ctrl+C to exit")
 	<-stop
 	if *cleanup {

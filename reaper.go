@@ -259,14 +259,6 @@ func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
 	}
 }
 
-type ReapOutput struct {
-	MilliSeconds      int64
-	ReapAgain         string
-	MultiplierMessage string
-	Winner            *string
-	GameId            int
-}
-
 func Multiplier() (int64, string) {
 	number, err := rand.Int(rand.Reader, big.NewInt(1000))
 	if err != nil {
@@ -314,6 +306,14 @@ func Multiplier() (int64, string) {
 	return 1, "."
 }
 
+type ReapOutput struct {
+	MilliSeconds      int64
+	ReapAgain         string
+	MultiplierMessage string
+	Winner            *string
+	GameId            int
+}
+
 func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	gameid, running := d.CurrentReaperId(channelid)
 	if !running {
@@ -335,11 +335,9 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	cooldown := d.GetCooldown(channelid, gameid)
 	if didreap {
 		if userlastreap+cooldown*1000 > time.Now().UnixMilli() {
-			return ReapOutput{}, errors.New(
-				fmt.Sprintf(
+			return ReapOutput{}, fmt.Errorf(
 					"You may not reap again until %v",
 					fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
-				),
 			)
 		}
 	}

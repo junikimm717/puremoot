@@ -46,7 +46,7 @@ func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo
 		}
 	}
 	if cow_role_id == "" {
-		return []*discordgo.Member{}, errors.New("No Server Role 'cow'.")
+		return []*discordgo.Member{}, errors.New("no server role 'cow'")
 	}
 	cows := make([]*discordgo.Member, 0)
 	for _, m := range members {

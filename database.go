@@ -53,19 +53,6 @@ func InitDatabase() *Database {
 	}
 }
 
-func (d *Database) ExecuteCommand(cmd *redis.StringCmd, allowed ...error) {
-	err := cmd.Err()
-	if err == nil {
-		return
-	}
-	for _, errortype := range allowed {
-		if err == errortype {
-			return
-		}
-	}
-	log.Fatalln(err)
-}
-
 func (d *Database) userChannelKey(user string, channel string) string {
 	return fmt.Sprintf("%v-%v", user, channel)
 }

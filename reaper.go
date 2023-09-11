@@ -7,8 +7,10 @@ import (
 	"log"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -411,4 +413,182 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 		GameId:            gameid,
 		MultiplierMessage: message,
 	}, nil
+}
+
+var ReaperHandlers = map[string]SubcommandHandler{
+	"leaderboard": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		options := extractInteractionOptions(opts)
+		currentid, activegame := db.CurrentReaperId(i.ChannelID)
+		var leaderboard []LeaderBoardItem
+		leaderboardgameid := int64(0)
+		if gameid, ok := options["gameid"]; ok {
+			if currentid == 0 || gameid.IntValue() > int64(currentid) {
+				respond(s, i, "No such round of Reaper!")
+				return
+			}
+			respond(s, i, "Message Received! Compiling Leaderboard...")
+			b, err := db.GetLeaderBoard(i.ChannelID, int(gameid.IntValue()))
+			if err != nil {
+				s.ChannelMessageSend(
+					i.ChannelID,
+					"Error generating Leaderboard! "+err.Error(),
+				)
+				return
+			}
+			leaderboard = b
+			leaderboardgameid = gameid.IntValue()
+		} else {
+			if !activegame {
+				respond(s, i, "No active game of reaper!")
+				return
+			}
+			respond(s, i, "Message Received! Compiling Leaderboard...")
+			b, err := db.GetLeaderBoard(i.ChannelID, currentid)
+			if err != nil {
+				s.ChannelMessageSend(
+					i.ChannelID,
+					"Error generating Leaderboard! "+err.Error(),
+				)
+				return
+			}
+			leaderboard = b
+			leaderboardgameid = int64(currentid)
+		}
+
+		wincond := db.GetWincond(i.ChannelID, int(leaderboardgameid))
+		cooldown := db.GetCooldown(i.ChannelID, int(leaderboardgameid))
+
+		usernames := []string{}
+		ranks := []string{}
+		scores := []string{}
+		for rank, item := range leaderboard {
+			ranks = append(ranks, fmt.Sprintf("%v.", rank+1))
+			usernames = append(usernames, fmt.Sprintf("%v", item.Username))
+			scores = append(scores, fmt.Sprintf("%.3f seconds", item.Score))
+		}
+
+		_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("Reaper Round %v", leaderboardgameid),
+			Description: fmt.Sprintf("The Top 20 Leaderboard | **%v** seconds to win | **%v** seconds between reaps", wincond, cooldown),
+			Fields: []*discordgo.MessageEmbedField{
+				{Name: "Rank", Value: strings.Join(ranks, "\n"), Inline: true},
+				{Name: "Username", Value: strings.Join(usernames, "\n"), Inline: true},
+				{Name: "Score", Value: strings.Join(scores, "\n"), Inline: true},
+			},
+			Color: 0xFFD700,
+		})
+		if err != nil {
+			respond(s, i, fmt.Sprintf("Error Sending Message! %v", err.Error()))
+		}
+	},
+	"score": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		options := extractInteractionOptions(opts)
+		user := options["user"].UserValue(s)
+		gameid := options["gameid"].IntValue()
+		score, err := db.GetOneScore(i.ChannelID, int(gameid), user.ID)
+		if err != nil {
+			respond(s, i, err.Error())
+		}
+		respond(
+			s,
+			i,
+			fmt.Sprintf("%v reaped a total of %v seconds (Rank %v) in Round %v!", user.Username, score.Score, score.Rank, gameid),
+		)
+	},
+	"init": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		if !forceManager(s, i) {
+			return
+		}
+		options := extractInteractionOptions(opts)
+		win := options["win"].IntValue()
+		cooldown := options["cooldown"].IntValue()
+		gameId, created := db.InitReaper(i.ChannelID, win, cooldown)
+		if !created {
+			respond(s, i, "The ongoing reaper round must end before you can create a new round!")
+			return
+		}
+		_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("Reaper Round %v Has Begun!", gameId),
+			Description: fmt.Sprintf("%v seconds to win. %v seconds between reaps. Use the `/reap` command.", win, cooldown),
+			Color:       0xFFD700,
+		})
+		if err != nil {
+			respond(s, i, fmt.Sprintf("Error Sending Message! %v", err))
+		} else {
+			respond(s, i, fmt.Sprintf("Reaper Round %v Successfully Created", gameId))
+		}
+	},
+	"cancel": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		if !forceManager(s, i) {
+			return
+		}
+		options := extractInteractionOptions(opts)
+		gameid, _ := db.CurrentReaperId(i.ChannelID)
+		if gameid != int(options["gameid"].IntValue()) {
+			respond(s, i, "Confirmation failed. Game has not been cancelled.")
+			return
+		}
+		gameid, deleted := db.CancelReaper(i.ChannelID)
+		if !deleted {
+			respond(s, i, "There is no active game of reaper!")
+			return
+		}
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Reaper Round %v has been cancelled by the admins! Very 1428!", gameid),
+			},
+		})
+	},
+	"current": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		if !forceManager(s, i) {
+			return
+		}
+		gameId, active := db.CurrentReaperId(i.ChannelID)
+		if !active {
+			if gameId == 1 {
+				respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v round has been played.", gameId))
+			} else {
+				respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v rounds have been played.", gameId))
+			}
+			return
+		}
+		respond(s, i, fmt.Sprintf("Reaper Round %v is active!", gameId))
+	},
+	"last2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		gameid, active := db.CurrentReaperId(i.ChannelID)
+		if !active {
+			if gameid == 1 {
+				respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v round has been played.", gameid))
+			} else {
+				respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v rounds have been played.", gameid))
+			}
+			return
+		}
+		lastreaper, lastreaptime := db.LastToReap(i.ChannelID, gameid)
+		username, err := db.UsernameFromId(lastreaper)
+		if err != nil {
+			log.Println(err)
+		}
+		respond(
+			s,
+			i,
+			fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
+		)
+	},
+	"when2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		time, err := db.When2Reap(i.Member.User.ID, i.ChannelID)
+		if err != nil {
+			respond(s, i, err.Error())
+		}
+		if time == 0 {
+			respond(s, i, "You haven't reaped yet. Go ahead!")
+		} else {
+			respond(
+				s,
+				i,
+				fmt.Sprintf("You may reap at <t:%v>", time),
+			)
+		}
+	},
 }

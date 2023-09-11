@@ -44,3 +44,30 @@ func (d *Database) BroadcastMessage(user string, channel string, message string)
 	}
 	return fmt.Sprintf("[broadcast:**%v**] %v", id, message), id
 }
+
+/*
+Functions for enabling and disabling broadcast
+*/
+func (d *Database) EnableBroadcast(channel string) error {
+	return d.SetBool(
+		fmt.Sprintf("broadcast-enabled:%v", channel),
+		true,
+	)
+}
+
+func (d *Database) DisableBroadcast(channel string) error {
+	return d.SetBool(
+		fmt.Sprintf("broadcast-enabled:%v", channel),
+		false,
+	)
+}
+
+func (d *Database) BroadcastAllowed(channel string) bool {
+	allowed, exists := d.GetBool(
+		fmt.Sprintf("broadcast-enabled:%v", channel),
+	)
+	if !exists {
+		return true
+	}
+	return allowed
+}

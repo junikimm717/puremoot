@@ -10,6 +10,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type SubcommandHandler func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption)
+
 var (
 	minValue float64 = 1.0
 	zero     float64 = 0.0
@@ -28,10 +30,12 @@ var (
 					Required:    true,
 				},
 			},
+			Type: 1,
 		},
 		{
 			Name:        "regenerate",
 			Description: "Regenerate a broadcast Id",
+			Type:        1,
 		},
 		/*
 			The namesake command
@@ -48,13 +52,64 @@ var (
 					MinValue:    &minValue,
 				},
 			},
+			Type: 1,
+		},
+		/*
+			manager commands
+		*/
+		{
+
+			Name:        "pmmanager",
+			Description: "All commands related to the pureMOOt manager",
+			Type:        1,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "set",
+					Description: "Set the pureMOOt manager role",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionRole,
+							Name:        "role",
+							Description: "Role to set puremOOt manager to",
+							Required:    true,
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "unset",
+					Description: "Unset the pureMOOt manager role",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "get",
+					Description: "Get the name of the pureMOOt manager role",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "ballow",
+					Description: "Allow broadcast on this channel (Managers Only!)",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "bban",
+					Description: "Ban broadcast on this channel (Managers Only!)",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "bpermitted",
+					Description: "Check if broadcast is permitted on a channel",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+			},
 		},
 		/*
 			reaper commands
 		*/
 		{
-			Name:        "reapergame",
+			Name:        "reaper",
 			Description: "Command for all functions related to reaper!",
+			Type:        1,
 			Options: []*discordgo.ApplicationCommandOption{
 
 				{
@@ -148,6 +203,7 @@ var (
 		{
 			Name:        "reap",
 			Description: "Harvest the pears!",
+			Type:        1,
 		},
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -191,13 +247,29 @@ var (
 				}
 			}
 		},
-		"reapergame": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"reaper": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			if i.Member == nil {
 				respond(s, i, "i.Member field not present. Cannot proceed")
 				return
 			}
 			options := i.ApplicationCommandData().Options
-			handler, exists := reaperHandlers[options[0].Name]
+			handler, exists := ReaperHandlers[options[0].Name]
+			if !exists {
+				respond(s, i, "Invalid Command given")
+				return
+			}
+			handler(s, i, options[0].Options)
+		},
+		/*
+			Commands related to managing roles, etc.
+		*/
+		"pmmanager": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.Member == nil {
+				respond(s, i, "i.Member field not present. Cannot proceed")
+				return
+			}
+			options := i.ApplicationCommandData().Options
+			handler, exists := ManagerHandlers[options[0].Name]
 			if !exists {
 				respond(s, i, "Invalid Command given")
 				return
@@ -209,6 +281,10 @@ var (
 		*/
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := extractInteractionOptions(i.ApplicationCommandData().Options)
+			if !db.BroadcastAllowed(i.ChannelID) {
+				respond(s, i, "Anonymous broadcasting has been banned on this channel!")
+				return
+			}
 			pingRegex := regexp.MustCompile(`<@&?\d+>|@[0-9,a-z,A-Z]+`)
 			message := options["message"].StringValue()
 			if pingRegex.Match([]byte(message)) {
@@ -237,7 +313,7 @@ var (
 			What pureMOOt was designed to do. This command pairs people up for Randomized DM's.
 		*/
 		"puremoot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !forceAdmin(s, i) {
+			if !forceManager(s, i) {
 				return
 			}
 			cows, err := getCows(s, i)
@@ -273,183 +349,6 @@ var (
 						pair[1].User.ID,
 						strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
 					),
-				)
-			}
-		},
-	}
-	reaperHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption){
-		"leaderboard": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			options := extractInteractionOptions(opts)
-			currentid, activegame := db.CurrentReaperId(i.ChannelID)
-			var leaderboard []LeaderBoardItem
-			leaderboardgameid := int64(0)
-			if gameid, ok := options["gameid"]; ok {
-				if currentid == 0 || gameid.IntValue() > int64(currentid) {
-					respond(s, i, "No such round of Reaper!")
-					return
-				}
-				respond(s, i, "Message Received! Compiling Leaderboard...")
-				b, err := db.GetLeaderBoard(i.ChannelID, int(gameid.IntValue()))
-				if err != nil {
-					s.ChannelMessageSend(
-						i.ChannelID,
-						"Error generating Leaderboard! "+err.Error(),
-					)
-					return
-				}
-				leaderboard = b
-				leaderboardgameid = gameid.IntValue()
-			} else {
-				if !activegame {
-					respond(s, i, "No active game of reaper!")
-					return
-				}
-				respond(s, i, "Message Received! Compiling Leaderboard...")
-				b, err := db.GetLeaderBoard(i.ChannelID, currentid)
-				if err != nil {
-					s.ChannelMessageSend(
-						i.ChannelID,
-						"Error generating Leaderboard! "+err.Error(),
-					)
-					return
-				}
-				leaderboard = b
-				leaderboardgameid = int64(currentid)
-			}
-
-			wincond := db.GetWincond(i.ChannelID, int(leaderboardgameid))
-			cooldown := db.GetCooldown(i.ChannelID, int(leaderboardgameid))
-
-			usernames := []string{}
-			ranks := []string{}
-			scores := []string{}
-			for rank, item := range leaderboard {
-				ranks = append(ranks, fmt.Sprintf("%v.", rank+1))
-				usernames = append(usernames, fmt.Sprintf("%v", item.Username))
-				scores = append(scores, fmt.Sprintf("%.3f seconds", item.Score))
-			}
-
-			_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
-				Title:       fmt.Sprintf("Reaper Round %v", leaderboardgameid),
-				Description: fmt.Sprintf("The Top 20 Leaderboard | **%v** seconds to win | **%v** seconds between reaps", wincond, cooldown),
-				Fields: []*discordgo.MessageEmbedField{
-					{Name: "Rank", Value: strings.Join(ranks, "\n"), Inline: true},
-					{Name: "Username", Value: strings.Join(usernames, "\n"), Inline: true},
-					{Name: "Score", Value: strings.Join(scores, "\n"), Inline: true},
-				},
-				Color: 0xFFD700,
-			})
-			if err != nil {
-				respond(s, i, fmt.Sprintf("Error Sending Message! %v", err.Error()))
-			}
-		},
-		"score": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			options := extractInteractionOptions(opts)
-			user := options["user"].UserValue(s)
-			gameid := options["gameid"].IntValue()
-			score, err := db.GetOneScore(i.ChannelID, int(gameid), user.ID)
-			if err != nil {
-				respond(s, i, err.Error())
-			}
-			respond(
-				s,
-				i,
-				fmt.Sprintf("%v reaped a total of %v seconds (Rank %v) in Round %v!", user.Username, score.Score, score.Rank, gameid),
-			)
-		},
-		"init": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			if !forceAdmin(s, i) {
-				return
-			}
-			options := extractInteractionOptions(opts)
-			win := options["win"].IntValue()
-			cooldown := options["cooldown"].IntValue()
-			gameId, created := db.InitReaper(i.ChannelID, win, cooldown)
-			if !created {
-				respond(s, i, "The ongoing reaper round must end before you can create a new round!")
-				return
-			}
-			_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
-				Title:       fmt.Sprintf("Reaper Round %v Has Begun!", gameId),
-				Description: fmt.Sprintf("%v seconds to win. %v seconds between reaps. Use the `/reap` command.", win, cooldown),
-				Color:       0xFFD700,
-			})
-			if err != nil {
-				respond(s, i, fmt.Sprintf("Error Sending Message! %v", err))
-			} else {
-				respond(s, i, fmt.Sprintf("Reaper Round %v Successfully Created", gameId))
-			}
-		},
-		"cancel": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			if !forceAdmin(s, i) {
-				return
-			}
-			options := extractInteractionOptions(opts)
-			gameid, _ := db.CurrentReaperId(i.ChannelID)
-			if gameid != int(options["gameid"].IntValue()) {
-				respond(s, i, "Confirmation failed. Game has not been cancelled.")
-				return
-			}
-			gameid, deleted := db.CancelReaper(i.ChannelID)
-			if !deleted {
-				respond(s, i, "There is no active game of reaper!")
-				return
-			}
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Reaper Round %v has been cancelled by the admins! Very 1428!", gameid),
-				},
-			})
-		},
-		"current": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			if !forceAdmin(s, i) {
-				return
-			}
-			gameId, active := db.CurrentReaperId(i.ChannelID)
-			if !active {
-				if gameId == 1 {
-					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v round has been played.", gameId))
-				} else {
-					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v rounds have been played.", gameId))
-				}
-				return
-			}
-			respond(s, i, fmt.Sprintf("Reaper Round %v is active!", gameId))
-		},
-		"last2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			gameid, active := db.CurrentReaperId(i.ChannelID)
-			if !active {
-				if gameid == 1 {
-					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v round has been played.", gameid))
-				} else {
-					respond(s, i, fmt.Sprintf("There is no active game of reaper on this channel! %v rounds have been played.", gameid))
-				}
-				return
-			}
-			lastreaper, lastreaptime := db.LastToReap(i.ChannelID, gameid)
-			username, err := db.UsernameFromId(lastreaper)
-			if err != nil {
-				log.Println(err)
-			}
-			respond(
-				s,
-				i,
-				fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
-			)
-		},
-		"when2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-			time, err := db.When2Reap(i.Member.User.ID, i.ChannelID)
-			if err != nil {
-				respond(s, i, err.Error())
-			}
-			if time == 0 {
-				respond(s, i, "You haven't reaped yet. Go ahead!")
-			} else {
-				respond(
-					s,
-					i,
-					fmt.Sprintf("You may reap at <t:%v>", time),
 				)
 			}
 		},

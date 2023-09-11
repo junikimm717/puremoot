@@ -44,15 +44,26 @@ func (d *Database) GetString(key string) (string, bool) {
 	return val, true
 }
 
-func (d *Database) SetString(key string, val string) {
-	err := d.client.Set(ctx, key, val, 0).Err()
-	if err != nil {
-		panic(err)
-	}
+func (d *Database) SetString(key string, val string) error {
+	return d.client.Set(ctx, key, val, 0).Err()
 }
 
-func (d *Database) UsernameFromId(id string) (string, error) {
-	username, exists := d.GetString(fmt.Sprintf("userid:%v", id))
+func (d *Database) GetBool(key string) (bool, bool) {
+	val, err := d.client.Get(ctx, key).Bool()
+	if err == redis.Nil {
+		return false, false
+	} else if err != nil {
+		panic(err)
+	}
+	return val, true
+}
+
+func (d *Database) SetBool(key string, val bool) error {
+	return d.client.Set(ctx, key, val, 0).Err()
+}
+
+func (d *Database) UsernameFromId(userId string) (string, error) {
+	username, exists := d.GetString(fmt.Sprintf("userid:%v", userId))
 	number, err := rand.Int(rand.Reader, big.NewInt(1000))
 	if err != nil {
 		// should never happen.
@@ -60,7 +71,7 @@ func (d *Database) UsernameFromId(id string) (string, error) {
 	}
 	// randomly re-validate usernames 8% of the time
 	if !exists || number.Int64() < int64(80) {
-		user, err := dg.User(id)
+		user, err := dg.User(userId)
 		if err != nil {
 			return "<nonexistent user>", err
 		}
@@ -70,7 +81,7 @@ func (d *Database) UsernameFromId(id string) (string, error) {
 		if err != nil {
 			panic(err)
 		}
-		d.client.Set(ctx, fmt.Sprintf("userid:%v", id), username, cache_time)
+		d.client.Set(ctx, fmt.Sprintf("userid:%v", userId), username, cache_time)
 	}
 	return username, nil
 }

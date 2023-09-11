@@ -492,7 +492,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		respond(
 			s,
 			i,
-			fmt.Sprintf("%v reaped a total of %v seconds (Rank %v) in Round %v!", user.Username, score.Score, score.Rank, gameid),
+			fmt.Sprintf("%v reaped a total of %.3f seconds (Rank %v) in Round %v!", user.Username, score.Score, score.Rank, gameid),
 		)
 	},
 	"init": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {

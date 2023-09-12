@@ -457,6 +457,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 
 		wincond := db.GetWincond(i.ChannelID, int(leaderboardgameid))
 		cooldown := db.GetCooldown(i.ChannelID, int(leaderboardgameid))
+		channelname, _ := db.ChannelFromId(i.ChannelID)
 
 		usernames := []string{}
 		ranks := []string{}
@@ -468,7 +469,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		}
 
 		_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("Reaper Round %v", leaderboardgameid),
+			Title:       fmt.Sprintf("Reaper Round %v on #%v", leaderboardgameid, channelname),
 			Description: fmt.Sprintf("The Top 20 Leaderboard | **%v** seconds to win | **%v** seconds between reaps", wincond, cooldown),
 			Fields: []*discordgo.MessageEmbedField{
 				{Name: "Rank", Value: strings.Join(ranks, "\n"), Inline: true},

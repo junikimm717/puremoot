@@ -85,3 +85,27 @@ func (d *Database) UsernameFromId(userId string) (string, error) {
 	}
 	return username, nil
 }
+
+func (d *Database) ChannelFromId(channelId string) (string, error) {
+	channelname, exists := d.GetString(fmt.Sprintf("channelid:%v", channelId))
+	number, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		// should never happen.
+		panic(err)
+	}
+	// randomly re-validate usernames 8% of the time
+	if !exists || number.Int64() < int64(150) {
+		channel, err := dg.Channel(channelId)
+		if err != nil {
+			return "<nonexistent channel>", err
+		}
+		channelname = channel.Name
+		cache_time, err := time.ParseDuration("24h")
+		// should never happen.
+		if err != nil {
+			panic(err)
+		}
+		d.client.Set(ctx, fmt.Sprintf("channelid:%v", channelId), channelname, cache_time)
+	}
+	return channelname, nil
+}

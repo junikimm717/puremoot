@@ -223,7 +223,7 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf(
-						"%v reaped for %v%v Can reap again at %v",
+						"%v reaped for %v%v They will not be able to reap until %v",
 						i.Member.User.Username,
 						milliToTime(score.MilliSeconds),
 						score.MultiplierMessage,

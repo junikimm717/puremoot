@@ -7,26 +7,48 @@ import (
 )
 
 /*
-CRUD for pureMOOt manager role
+CRUD for pureMOOt manager,cow role
 */
 
-func (d *Database) GetManager(guildId string) (string, bool) {
+const (
+	PuremootManagerRole = "manager"
+	PuremootCowRole     = "cow"
+)
+
+var PuremootRoleOptions = discordgo.ApplicationCommandOption{
+	Type:        discordgo.ApplicationCommandOptionString,
+	Name:        "roletype",
+	Description: "Role Type",
+	Choices: []*discordgo.ApplicationCommandOptionChoice{
+		{
+			Name:  "Manager",
+			Value: PuremootManagerRole,
+		},
+		{
+			Name:  "Cow",
+			Value: PuremootCowRole,
+		},
+	},
+	Required: true,
+}
+
+func (d *Database) GetPuremootRole(puremootRole string, guildId string) (string, bool) {
 	return d.GetString(
-		fmt.Sprintf("manager:%v", guildId),
+		fmt.Sprintf("%v:%v", puremootRole, guildId),
 	)
 }
 
-func (d *Database) SetManager(guildId string, roleId string) error {
+func (d *Database) SetPuremootRole(puremootRole string, guildId string, roleId string) error {
 	return d.SetString(
-		fmt.Sprintf("manager:%v", guildId),
+		fmt.Sprintf("%v:%v", puremootRole, guildId),
 		roleId,
 	)
 }
 
-func (d *Database) UnSetManager(guildId string) error {
+func (d *Database) UnsetPuremootRole(puremootRole string, guildId string) error {
 	return d.client.Del(
 		ctx,
-		fmt.Sprintf("manager:%v", guildId),
+		fmt.Sprintf("%v:%v", puremootRole, guildId),
 	).Err()
 }
 
@@ -35,7 +57,7 @@ func forceManager(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
 		respond(s, i, "You cannot invoke this command outside of a guild")
 		return false
 	}
-	manager, exists := db.GetManager(i.GuildID)
+	manager, exists := db.GetPuremootRole(PuremootManagerRole, i.GuildID)
 	if exists {
 		for _, role := range i.Member.Roles {
 			if role == manager {
@@ -54,11 +76,13 @@ func forceManager(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
 
 var ManagerHandlers = map[string]SubcommandHandler{
 	"get": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
-		manager, exists := db.GetManager(i.GuildID)
+		options := extractInteractionOptions(opts)
+		puremootRole := options["roletype"].StringValue()
+		roleId, exists := db.GetPuremootRole(puremootRole, i.GuildID)
 		if !exists {
-			respond(s, i, "No manager role exists for pureMOOt!")
+			respond(s, i, fmt.Sprintf("No %v role exists for pureMOOt!", puremootRole))
 		} else {
-			respond(s, i, fmt.Sprintf("The <@&%v> role can manage pureMOOt", manager))
+			respond(s, i, fmt.Sprintf("The <@&%v> Discord role is the %v role for pureMOOt", roleId, puremootRole))
 		}
 	},
 	"set": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -66,8 +90,9 @@ var ManagerHandlers = map[string]SubcommandHandler{
 			return
 		}
 		options := extractInteractionOptions(opts)
+		puremootRole := options["roletype"].StringValue()
 		role := options["role"].RoleValue(s, i.GuildID)
-		err := db.SetManager(i.GuildID, role.ID)
+		err := db.SetPuremootRole(puremootRole, i.GuildID, role.ID)
 		if err != nil {
 			respond(
 				s, i,
@@ -77,7 +102,7 @@ var ManagerHandlers = map[string]SubcommandHandler{
 			respond(
 				s,
 				i,
-				fmt.Sprintf("Manager Role set to %v", role.Mention()),
+				fmt.Sprintf("puremoot role %v set to %v", puremootRole, role.Mention()),
 			)
 		}
 	},
@@ -85,7 +110,9 @@ var ManagerHandlers = map[string]SubcommandHandler{
 		if !forceManager(s, i) {
 			return
 		}
-		err := db.UnSetManager(i.GuildID)
+		options := extractInteractionOptions(opts)
+		puremootRole := options["roletype"].StringValue()
+		err := db.UnsetPuremootRole(puremootRole, i.GuildID)
 		if err != nil {
 			respond(
 				s, i,
@@ -95,7 +122,7 @@ var ManagerHandlers = map[string]SubcommandHandler{
 			respond(
 				s,
 				i,
-				"Manager role has been unset",
+				fmt.Sprintf("%v Role unset", puremootRole),
 			)
 		}
 	},

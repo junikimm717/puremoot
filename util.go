@@ -61,3 +61,13 @@ func milliToTime(milliseconds int64) string {
 	}
 	return strings.Join(res, ", ")
 }
+
+func truncate(s string, length int) string {
+	s = strings.TrimLeft(s, " \n\t")
+	result := []byte{}
+	for i := 0; i < len(s) && i < length; i++ {
+		result = append(result, s[i])
+	}
+	return strings.Trim(string(result), " \n\t")
+	return string(result)
+}

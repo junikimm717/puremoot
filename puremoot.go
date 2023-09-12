@@ -29,24 +29,31 @@ func PureMOOt[T any](arr []T) [][]T {
 	return res
 }
 
-func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo.Member, error) {
-	cow_role_id := ""
+func cowRole(s *discordgo.Session, i *discordgo.InteractionCreate) (string, error) {
+	roleId, exists := db.GetPuremootRole(PuremootCowRole, i.GuildID)
+	if exists {
+		return roleId, nil
+	}
 	roles, err := s.GuildRoles(i.GuildID)
+	if err != nil {
+		return "", err
+	}
+	for _, role := range roles {
+		if strings.ToLower(role.Name) == "cow" {
+			return role.ID, nil
+		}
+	}
+	return "", errors.New("no server role 'cow'")
+}
+
+func getCows(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo.Member, error) {
+	cow_role_id, err := cowRole(s, i)
 	if err != nil {
 		return []*discordgo.Member{}, err
 	}
 	members, err := s.GuildMembers(i.GuildID, "", 800)
 	if err != nil {
 		return []*discordgo.Member{}, err
-	}
-	for _, role := range roles {
-		if strings.ToLower(role.Name) == "cow" {
-			cow_role_id = role.ID
-			break
-		}
-	}
-	if cow_role_id == "" {
-		return []*discordgo.Member{}, errors.New("no server role 'cow'")
 	}
 	cows := make([]*discordgo.Member, 0)
 	for _, m := range members {

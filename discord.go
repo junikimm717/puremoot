@@ -29,6 +29,19 @@ var (
 					Description: "The message you want to send",
 					Required:    true,
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "respondto",
+					Description: "Respond to the message with this link in a new thread",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "threadname",
+					Description: "Name of the new thread",
+					MaxLength:   15,
+					Required:    false,
+				},
 			},
 			Type: 1,
 		},
@@ -64,9 +77,26 @@ var (
 			Type:        1,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
+					Name:        "unset",
+					Description: "Unset the pureMOOt manager role",
+					Options: []*discordgo.ApplicationCommandOption{
+						&PuremootRoleOptions,
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "get",
+					Description: "Get the name of the pureMOOt manager role",
+					Options: []*discordgo.ApplicationCommandOption{
+						&PuremootRoleOptions,
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
 					Name:        "set",
 					Description: "Set the pureMOOt manager role",
 					Options: []*discordgo.ApplicationCommandOption{
+						&PuremootRoleOptions,
 						{
 							Type:        discordgo.ApplicationCommandOptionRole,
 							Name:        "role",
@@ -75,16 +105,6 @@ var (
 						},
 					},
 					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "unset",
-					Description: "Unset the pureMOOt manager role",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "get",
-					Description: "Get the name of the pureMOOt manager role",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "ballow",
@@ -281,6 +301,9 @@ var (
 		*/
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := extractInteractionOptions(i.ApplicationCommandData().Options)
+			if i.Member == nil {
+				respond(s, i, "[developer] The i.Member field is not present. Cannot broadcast!")
+			}
 			if !db.BroadcastAllowed(i.ChannelID) {
 				respond(s, i, "Anonymous broadcasting has been banned on this channel!")
 				return
@@ -291,15 +314,83 @@ var (
 				respond(s, i, "Broadcast refused! Message contains a ping!")
 				return
 			}
-			if i.Member == nil {
-				respond(s, i, "[developer] The i.Member field is not present. Cannot broadcast!")
+
+			respondoption, exists := options["respondto"]
+			if !exists {
+				broadcastMessage, id := db.BroadcastMessage(i.Member.User.ID, i.ChannelID, message)
+				_, err := s.ChannelMessageSend(i.ChannelID, broadcastMessage)
+				if err != nil {
+					respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
+				} else {
+					respond(s, i, fmt.Sprintf("Message successfully broadcasted! Your ID is %v", id))
+				}
+				return
 			}
-			message, id := db.BroadcastMessage(i.Member.User.ID, i.ChannelID, message)
-			_, err := s.ChannelMessageSend(i.ChannelID, message)
+			respondto := respondoption.StringValue()
+			messageLinkRegex := regexp.MustCompile(`https?://discord.com/channels/(?P<guildId>\d+)/(?P<channelId>\d+)/(?P<messageId>\d+)`)
+			match := messageLinkRegex.FindStringSubmatch(respondto)
+
+			if len(match) != 4 {
+				respond(s, i, fmt.Sprintf("Invalid Message Link!"))
+				return
+			}
+
+			if i.ChannelID != match[2] {
+				matchchannel, err := db.ChannelFromId(match[2])
+				if err != nil {
+					respond(s, i, err.Error())
+					return
+				}
+				currentchannel, err := db.ChannelFromId(i.ChannelID)
+				if err != nil {
+					respond(s, i, err.Error())
+					return
+				}
+				respond(s, i, fmt.Sprintf("Message belongs to channel %v but you are in %v", matchchannel, currentchannel))
+				return
+			}
+			messagetorespond, err := dg.ChannelMessage(match[2], match[3])
+			if err != nil {
+				respond(s, i, fmt.Sprintf(err.Error()))
+				return
+			} else if messagetorespond == nil {
+				respond(s, i, "The message you were trying to respond to is nil!")
+			}
+
+			threadnameoption, exists := options["threadname"]
+			threadname := ""
+			if exists {
+				threadname = threadnameoption.StringValue()
+			} else {
+				threadname = truncate(messagetorespond.ContentWithMentionsReplaced(), 15)
+			}
+
+			thread, err := s.MessageThreadStart(
+				messagetorespond.ChannelID,
+				messagetorespond.ID,
+				fmt.Sprintf(
+					"pureMOOt-%v",
+					threadname,
+				),
+				60,
+			)
+			if err != nil {
+				respond(s, i, fmt.Sprintf("Failed to create new thread! %v", err.Error()))
+				return
+			}
+
+			broadcastMessage, id := db.BroadcastMessage(i.Member.User.ID, thread.ID, message)
+			_, err = s.ChannelMessageSend(thread.ID, broadcastMessage)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
 			} else {
-				respond(s, i, fmt.Sprintf("Message successfully broadcasted! Your ID is %v", id))
+				respond(s, i,
+					fmt.Sprintf(
+						"Message successfully broadcasted into thread 'pureMOOt-%v'! Your ID is %v",
+						threadname,
+						id,
+					),
+				)
 			}
 		},
 		"regenerate": func(s *discordgo.Session, i *discordgo.InteractionCreate) {

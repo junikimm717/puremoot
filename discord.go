@@ -372,7 +372,7 @@ var (
 					"pureMOOt-%v",
 					threadname,
 				),
-				60,
+				60*24*3,
 			)
 			if err != nil {
 				respond(s, i, fmt.Sprintf("Failed to create new thread! %v", err.Error()))

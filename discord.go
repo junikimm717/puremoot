@@ -239,16 +239,25 @@ var (
 			if err != nil {
 				respond(s, i, "Failed to Reap! "+err.Error())
 			}
+
+			freeReapMessageComps := []string{}
+			if score.FreeReap {
+				freeReapMessageComps = append(freeReapMessageComps, "Free Reap Gained!")
+			}
+			if score.FreeReapUsed {
+				freeReapMessageComps = append(freeReapMessageComps, "Used a Free Reap!")
+			}
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf(
-						"%v reaped for %v%v They will not be able to reap until %v",
+						"%v reaped for %v%v Their cooldown expires at %v",
 						i.Member.User.Username,
 						milliToTime(score.MilliSeconds),
 						score.MultiplierMessage,
 						score.ReapAgain,
-					),
+					) + "\n" + strings.Join(freeReapMessageComps, " "),
 				},
 			})
 			if score.Winner != nil {

@@ -25,6 +25,7 @@ reaper:{channel}:{id}:cooldown - minimum amount of time between reaps (float64)
 reaper:{channel}:{id}:leaderboard - an ordered set that contains reaper scores.
 reaper:{channel}:{id}:reaplog - a stream that contains the most recent reaps.
 reaper:{channel}:{id}:{user}:last - when did this user last reap?
+reaper:{channel}:{id}:{user}:freereaps - number of free reaps a user has
 */
 
 type ReapLogEntry struct {
@@ -192,13 +193,6 @@ Parameters:
 channel - id of the discord channel where the game will be played.
 win - number of seconds to win (int)
 cooldown - number of seconds between reaps.
-
-1. Make sure that the discord channel doesn't have any other games of reaper going on.
-2. Create a leaderboard (key is user id and value is their score)
-3. Store reaper log in the form of a Redis stream.
-4. Track when each player last reaped for cooldown.
-
-Once this is done, the timer should start.
 */
 func (d *Database) InitReaper(channelid string, wincond int64, cooldown int64) (int, bool) {
 	newgameid, running := d.CurrentReaperId(channelid)
@@ -235,9 +229,6 @@ func (d *Database) InitReaper(channelid string, wincond int64, cooldown int64) (
 	return newgameid, true
 }
 
-/*
-Cancel the current game of reaper.
-*/
 func (d *Database) CancelReaper(channelid string) (int, bool) {
 	gameid, running := d.CurrentReaperId(channelid)
 	if !running {
@@ -245,6 +236,60 @@ func (d *Database) CancelReaper(channelid string) (int, bool) {
 	}
 	d.client.Set(ctx, fmt.Sprintf("reaper:%v:active", channelid), false, 0)
 	return gameid, true
+}
+
+func (d *Database) IncrementFreeReap(userid string, channelid string, gameid int) error {
+	return d.client.Incr(
+		ctx,
+		fmt.Sprintf(
+			"reaper:%v:%v:%v:freereaps",
+			channelid,
+			gameid,
+			userid,
+		),
+	).Err()
+}
+
+func (d *Database) DecrementFreeReap(userid string, channelid string, gameid int) error {
+	return d.client.Decr(
+		ctx,
+		fmt.Sprintf(
+			"reaper:%v:%v:%v:freereaps",
+			channelid,
+			gameid,
+			userid,
+		),
+	).Err()
+}
+
+func (d *Database) FreeReapCount(userid string, channelid string, gameid int) int {
+	key := fmt.Sprintf(
+		"reaper:%v:%v:%v:freereaps",
+		channelid,
+		gameid,
+		userid,
+	)
+	reaps, err := d.client.Get(ctx, key).Int()
+	if err != nil {
+		if err == redis.Nil {
+			d.client.Set(ctx, key, 0, 0).Err()
+		} else {
+			log.Println("Unexpected Error!", err.Error())
+		}
+	}
+	if reaps < 0 {
+		d.client.Set(ctx, key, 0, 0).Err()
+		return 0
+	}
+	return reaps
+}
+
+func FreeReapRng() bool {
+	number, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		panic(err)
+	}
+	return number.Int64() < int64(20)
 }
 
 func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
@@ -311,6 +356,8 @@ func Multiplier() (int64, string) {
 type ReapOutput struct {
 	MilliSeconds      int64
 	ReapAgain         string
+	FreeReap          bool
+	FreeReapUsed      bool
 	MultiplierMessage string
 	Winner            *string
 	GameId            int
@@ -318,6 +365,7 @@ type ReapOutput struct {
 
 func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	gameid, running := d.CurrentReaperId(channelid)
+	freeReapUsed := false
 	if !running {
 		return ReapOutput{}, errors.New("There is no active game of reaper. Ask the admins.")
 	}
@@ -325,7 +373,11 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	//_, lastreaptime := d.LastToReap(channelid, gameid)
 	lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
 	if userid == lastreaper {
-		return ReapOutput{}, errors.New("You were the last person to reap.")
+		if d.FreeReapCount(userid, channelid, gameid) <= 0 {
+			return ReapOutput{}, errors.New("You were the last person to reap.")
+		} else {
+			freeReapUsed = true
+		}
 	}
 
 	/*
@@ -333,38 +385,57 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	*/
 	userlastreap, didreap := d.LastReapTimeForUser(channelid, gameid, userid)
 	cooldown := d.GetCooldown(channelid, gameid)
+	// did they reap at any point in the history of the game?
 	if didreap {
 		if userlastreap+cooldown*1000 > time.Now().UnixMilli() {
-			return ReapOutput{}, fmt.Errorf(
-				"You may not reap again until %v",
-				fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
-			)
+			if d.FreeReapCount(userid, channelid, gameid) <= 0 {
+				return ReapOutput{}, fmt.Errorf(
+					"You may not reap again until %v",
+					fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
+				)
+			} else {
+				freeReapUsed = true
+			}
 		}
-	}
-	// log that this was the last time that this user reaped.
-	err := d.client.Set(
-		ctx,
-		fmt.Sprintf("reaper:%v:%v:%v:last", channelid, gameid, userid),
-		time.Now().UnixMilli(),
-		0,
-	).Err()
-	if err != nil {
-		log.Fatalln(err)
 	}
 
 	// calculate reaper score
 	timenow := time.Now()
 	score := timenow.UnixMilli() - lastreaptime
 
-	message := "." // a period is included because some messages have punctuation.
+	// log that this was the last time that this user reaped.
+	// free reaps don't affect cooldown
+	if !freeReapUsed {
+		err := d.client.Set(
+			ctx,
+			fmt.Sprintf("reaper:%v:%v:%v:last", channelid, gameid, userid),
+			timenow.UnixMilli(),
+			0,
+		).Err()
+		userlastreap = timenow.UnixMilli()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	message := "." // a period is included because some messages have punctuation. (e.g. Double Reap!)
 	if score < 3600*1000 {
 		multiplier, m := Multiplier()
 		score *= multiplier
 		message = m
 	}
 
+	// free reap logic
+	if freeReapUsed {
+		d.DecrementFreeReap(userid, channelid, gameid)
+	}
+	freeReapGained := FreeReapRng()
+	if freeReapGained {
+		d.IncrementFreeReap(userid, channelid, gameid)
+	}
+
 	// add it to the streams.
-	err = d.client.XAdd(ctx, &redis.XAddArgs{
+	err := d.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: fmt.Sprintf("reaper:%v:%v:reaplog", channelid, gameid),
 		Values: map[string]interface{}{
 			"userid": userid,
@@ -401,16 +472,20 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{
 				MilliSeconds:      score,
 				Winner:            &winner,
-				ReapAgain:         fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
+				ReapAgain:         fmt.Sprintf("<t:%v>", userlastreap/1000+cooldown),
 				GameId:            gameid,
+				FreeReapUsed:      freeReapUsed,
+				FreeReap:          freeReapGained,
 				MultiplierMessage: message,
 			}, nil
 		}
 	}
 	return ReapOutput{
 		MilliSeconds:      score,
-		ReapAgain:         fmt.Sprintf("<t:%v>", timenow.Unix()+cooldown),
+		ReapAgain:         fmt.Sprintf("<t:%v>", userlastreap/1000+cooldown),
 		GameId:            gameid,
+		FreeReapUsed:      freeReapUsed,
+		FreeReap:          freeReapGained,
 		MultiplierMessage: message,
 	}, nil
 }
@@ -578,17 +653,24 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		)
 	},
 	"when2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		gameId, exists := db.CurrentReaperId(i.ChannelID)
+		if !exists {
+			respond(s, i, "No active reaper round on this channel! Ask the admins.")
+			return
+		}
 		time, err := db.When2Reap(i.Member.User.ID, i.ChannelID)
 		if err != nil {
 			respond(s, i, err.Error())
+			return
 		}
+		freereaps := db.FreeReapCount(i.Member.User.ID, i.ChannelID, gameId)
 		if time == 0 {
 			respond(s, i, "You haven't reaped yet. Go ahead!")
 		} else {
 			respond(
 				s,
 				i,
-				fmt.Sprintf("You may reap at <t:%v>", time),
+				fmt.Sprintf("You may reap at <t:%v>. You have %d free reaps.", time, freereaps),
 			)
 		}
 	},

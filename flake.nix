@@ -2,9 +2,7 @@
   description = "Clean Permoot";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-    };
+    flake-utils = { url = "github:numtide/flake-utils"; };
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -16,7 +14,9 @@
         name = "pureMOOt";
       in {
 
-        devShell = pkgs.mkShell { buildInputs = with pkgs; [ go gopls scc redis ]; };
+        devShell = pkgs.mkShell {
+          buildInputs = with pkgs; [ go gopls scc redis nodejs ];
+        };
 
         defaultPackage = pkgs.stdenv.mkDerivation { inherit name version; };
 

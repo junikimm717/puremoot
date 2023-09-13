@@ -1,0 +1,29 @@
+---
+layout: ../layouts/main.astro
+title: 'Broadcast'
+---
+
+import Command from '../components/Command.astro'
+
+# Broadcasting
+
+PureMOOt allows users to broadcast anonymous messages! When a user broadcasts a
+message, they will be assigned an ID for that channel, which makes it easy to
+distinguish between anonymous users.
+
+## Regenerate a Broadcast ID
+
+<Command name="/regenerate"/>
+
+## Broadcast a message
+<Command name="/broadcast [message]"/>
+
+## Broadcast in a new thread
+
+This feature was introduced because people could not anonymously respond to
+Discord polls in `#polls` if the corresponding thread was not already created.
+
+<Command name="/broadcast [message] [respondto] [threadname]"/>
+
+- `[respondto]` is the message link for the message that you would like to respond to.
+- `[threadname]` is an optional argument.

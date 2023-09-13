@@ -1,0 +1,38 @@
+---
+import Navbar from '../components/Navbar.astro'
+
+const { content } = Astro.props;
+---
+
+<style>
+  .clamp {
+    width: clamp(10%, 1000px, 90%);
+    display: block;
+  }
+  html {
+    overflow-y: scroll;
+  }
+</style>
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/jpg" href="/favicon.jpg" />
+		<title>{content.title}</title>
+	</head>
+	<body class="bg-gray-800 text-white flex justify-center">
+    <div class="clamp">
+      <Navbar/>
+      <div class="prose prose-invert m-2 prose-headings:text-pnk prose-p:m-2
+                  max-w-none prose-a:text-pnk prose-headings:m-2
+                  prose-headings:my-3 prose-h1:text-gld prose-li:my-1">
+        <slot />
+      </div>
+      <div class="text-center text-gray-200 my-5 text-sm">
+        &copy; Juni Kim 2023-{(new Date()).getFullYear()}
+      </div>
+    </div>
+	</body>
+</html>
+

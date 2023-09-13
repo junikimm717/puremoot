@@ -1,0 +1,11 @@
+---
+interface Props {
+  name: string;
+  admin?: boolean
+}
+const {name, admin} = Astro.props
+---
+
+<span class={"font-mono bg-black text-white mx-2 p-1 rounded-lg text-md font-bold" + " " + (admin ? "bg-red-800" : "")}>
+  {name}
+</span>

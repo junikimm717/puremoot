@@ -1,0 +1,50 @@
+---
+layout: ../layouts/main.astro
+title: 'Reaper'
+---
+
+import Command from '../components/Command.astro'
+
+# Reaper
+
+Reaper is a game of strategy and patience where you try to gain as much time
+as possible. It originated from [AoPS](https://aops.com).
+
+## General Rules
+
+1. You may reap only if either condition is satisfied:
+    1. You were not the last person to reap and your cooldown expired, **or**
+    2. You have a free reap, in which case that free reap will be used up.
+
+## Scoring and RNG
+
+1. When you reap, your score will usually increase by the number of seconds since the last reap. 
+2. Every time you reap, you have a 2% chance of getting a free reap. Free reaps
+   can be used whenever you want with no restrictions.
+3. Every time you reap, the number of seconds you reaped may randomly multiply.
+   Reaper multipliers vanish if **a user reaped for more than 1 hour**.
+   Probabilities are listed below:
+    |**Multiplier**|**Probability**|
+    |---|---|
+    |2x|4%|
+    |3x|4%|
+    |4x|1%|
+    |5x|0.5%|
+    |8x|0.1%|
+
+## Commands
+
+PureMOOt administers games of reaper **per channel**.
+
+User-level commands:
+- <Command name="/reap" /> - the namesake; reap the time since the last reap!
+- <Command name="/reaper leaderboard" /> - returns an embed with a pretty-printed leaderboard.
+- <Command name="/reaper when" /> - shows when you can reap and how many free reaps you have.
+- <Command name="/reaper last" /> - shows who the last person to reap was.
+- <Command name="/reaper score [user] [gameid]" /> - returns the score and rank for a user in reaper round `[gameid]` on that channel.
+- <Command name="/reaper active" /> - returns the currently active game of reaper.
+
+Admin commands:
+- <Command name="/reaper cancel [gameid]" admin={true}/> - cancel the game of reaper with id `[gameid]`
+- <Command name="/reaper init [win] [cooldown]" admin={true}/> - create a new reaper round on a channel.
+  `[win]` seconds to win and `[cooldown]` seconds between reaps.

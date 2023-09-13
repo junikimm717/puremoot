@@ -1,0 +1,16 @@
+---
+const {name, username, picture} = Astro.props
+---
+
+<div class="flex flex-row items-center bg-[#222222] m-2 p-1 rounded-xl max-w-md
+px-3 transition-all hover:-translate-y-1 duration-200">
+  <div class="grid justify-center">
+    <img src={picture} width="50"/>
+  </div>
+  <div class="m-2">
+    <h4 class="m-2"><span class="text-white">{name}</span>{" "}(@{username})</h4>
+    <div class="text-gray-300 prose-p:m-1">
+      <slot />
+    </div>
+  </div>
+</div>

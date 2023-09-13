@@ -12,8 +12,8 @@
     eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        version = "0.1.0";
-        name = "Clean Permoot";
+        version = "0.0.0";
+        name = "pureMOOt";
       in {
 
         devShell = pkgs.mkShell { buildInputs = with pkgs; [ go gopls scc redis ]; };

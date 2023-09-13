@@ -75,6 +75,33 @@ func forceManager(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
 }
 
 var ManagerHandlers = map[string]SubcommandHandler{
+	"rban": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		if !forceManager(s, i) {
+			return
+		}
+		options := extractInteractionOptions(opts)
+		user := options["user"].UserValue(s)
+		db.BanReaperUser(user.ID, i.ChannelID)
+		respond(s, i, fmt.Sprintf("User %v has been banned from reaping on this channel!", user.Username))
+	},
+	"rallow": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		if !forceManager(s, i) {
+			return
+		}
+		options := extractInteractionOptions(opts)
+		user := options["user"].UserValue(s)
+		db.AllowReaperUser(user.ID, i.ChannelID)
+		respond(s, i, fmt.Sprintf("User %v has been unbanned from reaping on this channel!", user.Username))
+	},
+	"rpermitted": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		options := extractInteractionOptions(opts)
+		user := options["user"].UserValue(s)
+		if db.IsReaperUserBanned(user.ID, i.ChannelID) {
+			respond(s, i, fmt.Sprintf("User %v is banned from reaping on this channel!", user.Username))
+		} else {
+			respond(s, i, fmt.Sprintf("User %v is allowed to reap on this channel!", user.Username))
+		}
+	},
 	"get": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 		options := extractInteractionOptions(opts)
 		puremootRole := options["roletype"].StringValue()

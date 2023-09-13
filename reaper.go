@@ -26,11 +26,9 @@ reaper:{channel}:{id}:leaderboard - an ordered set that contains reaper scores.
 reaper:{channel}:{id}:reaplog - a stream that contains the most recent reaps.
 reaper:{channel}:{id}:{user}:last - when did this user last reap?
 reaper:{channel}:{id}:{user}:freereaps - number of free reaps a user has
-*/
 
-type ReapLogEntry struct {
-	UserId string
-}
+reaper:{channel}:{user}:banned - is this user banned from reaping on this channel?
+*/
 
 /*
 return the latest reaper game on the channel and also whether it is currently
@@ -238,6 +236,36 @@ func (d *Database) CancelReaper(channelid string) (int, bool) {
 	return gameid, true
 }
 
+/*
+Dealing with bans
+*/
+func (d *Database) BanReaperUser(userid string, channelid string) error {
+	return d.SetBool(
+		fmt.Sprintf("reaper:%v:%v:banned", channelid, userid),
+		true,
+	)
+}
+
+func (d *Database) AllowReaperUser(userid string, channelid string) error {
+	return d.SetBool(
+		fmt.Sprintf("reaper:%v:%v:banned", channelid, userid),
+		false,
+	)
+}
+
+func (d *Database) IsReaperUserBanned(userid string, channelid string) bool {
+	allowed, exists := d.GetBool(
+		fmt.Sprintf("reaper:%v:%v:banned", channelid, userid),
+	)
+	if !exists {
+		return true
+	}
+	return allowed
+}
+
+/*
+Methods for managing free reaps
+*/
 func (d *Database) IncrementFreeReap(userid string, channelid string, gameid int) error {
 	return d.client.Incr(
 		d.ctx,
@@ -291,6 +319,10 @@ func FreeReapRng() bool {
 	}
 	return number.Int64() < int64(20)
 }
+
+/*
+Shows users when they can reap
+*/
 
 func (d *Database) When2Reap(userid string, channelid string) (int64, error) {
 	gameid, running := d.CurrentReaperId(channelid)
@@ -538,7 +570,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		ranks := []string{}
 		scores := []string{}
 		for rank, item := range leaderboard {
-			ranks = append(ranks, fmt.Sprintf("%v.", rank+1))
+			ranks = append(ranks, fmt.Sprintf("%v", rank+1))
 			usernames = append(usernames, fmt.Sprintf("%v", item.Username))
 			scores = append(scores, fmt.Sprintf("%.3f seconds", item.Score))
 		}
@@ -616,7 +648,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			},
 		})
 	},
-	"current": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+	"active": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 		if !forceManager(s, i) {
 			return
 		}
@@ -631,7 +663,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		}
 		respond(s, i, fmt.Sprintf("Reaper Round %v is active!", gameId))
 	},
-	"last2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+	"last": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 		gameid, active := db.CurrentReaperId(i.ChannelID)
 		if !active {
 			if gameid == 1 {
@@ -652,7 +684,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
 		)
 	},
-	"when2reap": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+	"when": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
 		gameId, exists := db.CurrentReaperId(i.ChannelID)
 		if !exists {
 			respond(s, i, "No active reaper round on this channel! Ask the admins.")

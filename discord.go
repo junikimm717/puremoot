@@ -107,6 +107,42 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
+					Name: "rban", Description: "Ban a user from reaping on this channel (Admin Only)",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Name:        "user",
+							Description: "The user to ban",
+							Required:    true,
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name: "rallow", Description: "Allow a user to reap on this channel (Admin Only)",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Name:        "user",
+							Description: "The user to allow",
+							Required:    true,
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name: "rpermitted", Description: "Check if a user is permitted to reap on this channel",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionUser,
+							Name:        "user",
+							Description: "The user to check",
+							Required:    true,
+						},
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
 					Name:        "ballow",
 					Description: "Allow broadcast on this channel (Managers Only!)",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -168,17 +204,17 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "last2reap",
+					Name:        "last",
 					Description: "Return the last person who reaped in the current game of reaper",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "when2reap",
-					Description: "Return when you can reap next",
+					Name:        "when",
+					Description: "Shows when you can reap next",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "current",
+					Name:        "active",
 					Description: "Show the currently active game of reaper on this channel",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
@@ -222,7 +258,7 @@ var (
 		},
 		{
 			Name:        "reap",
-			Description: "Harvest the pears!",
+			Description: "Harvest a pear!",
 			Type:        1,
 		},
 	}
@@ -235,9 +271,14 @@ var (
 				respond(s, i, "i.Member field not present. Cannot proceed")
 				return
 			}
+			if db.IsReaperUserBanned(i.Member.User.ID, i.ChannelID) {
+				respond(s, i, "The Admins have banned you from reaping!")
+				return
+			}
 			score, err := db.Reap(i.Member.User.ID, i.ChannelID)
 			if err != nil {
 				respond(s, i, "Failed to Reap! "+err.Error())
+				return
 			}
 
 			freeReapMessageComps := []string{}
@@ -265,13 +306,51 @@ var (
 				if username == "" || err != nil {
 					log.Println(err)
 				}
-				_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
-					Title:       fmt.Sprintf("%v Wins Reaper Round %v!", username, score.GameId),
-					Description: "Thank you to everyone for playing!",
-					Color:       0xFFD700,
-				})
+				leaderboard, err := db.GetLeaderBoard(i.ChannelID, score.GameId)
 				if err != nil {
-					log.Printf("Could not send embed! '%v'", err)
+					s.ChannelMessageSend(
+						i.ChannelID,
+						fmt.Sprintf("Could not send embed! '%v'", err),
+					)
+					return
+				}
+				medals := []string{":first_place:", ":second_place:, :third_place:"}
+				usernames := []string{}
+				ranks := []string{}
+				scores := []string{}
+				for rank, item := range leaderboard {
+					if rank < len(medals) {
+						ranks = append(ranks, medals[rank])
+					} else {
+						ranks = append(ranks, fmt.Sprintf("%v", rank+1))
+					}
+					usernames = append(usernames, fmt.Sprintf("%v", item.Username))
+					scores = append(scores, fmt.Sprintf("%.3f seconds", item.Score))
+				}
+
+				channelname, _ := db.ChannelFromId(i.ChannelID)
+				_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
+					Title: fmt.Sprintf(
+						"%v wins Reaper Round %v in #%v!",
+						username,
+						score.GameId,
+						channelname,
+					),
+					Description: "Thank you everyone for playing!",
+
+					Fields: []*discordgo.MessageEmbedField{
+						{Name: "Rank", Value: strings.Join(ranks, "\n"), Inline: true},
+						{Name: "Username", Value: strings.Join(usernames, "\n"), Inline: true},
+						{Name: "Score", Value: strings.Join(scores, "\n"), Inline: true},
+					},
+					Color: 0xFFD700,
+				})
+
+				if err != nil {
+					s.ChannelMessageSend(
+						i.ChannelID,
+						fmt.Sprintf("Could not send embed! '%v'", err),
+					)
 					return
 				}
 			}

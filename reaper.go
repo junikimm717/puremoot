@@ -258,7 +258,7 @@ func (d *Database) IsReaperUserBanned(userid string, channelid string) bool {
 		fmt.Sprintf("reaper:%v:%v:banned", channelid, userid),
 	)
 	if !exists {
-		return true
+		return false
 	}
 	return allowed
 }

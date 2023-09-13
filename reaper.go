@@ -37,13 +37,13 @@ return the latest reaper game on the channel and also whether it is currently
 running or not.
 */
 func (d *Database) CurrentReaperId(channelid string) (int, bool) {
-	val, err := d.client.Get(ctx, fmt.Sprintf("reaper:%v:latest", channelid)).Int()
+	val, err := d.client.Get(d.ctx, fmt.Sprintf("reaper:%v:latest", channelid)).Int()
 	if err == redis.Nil {
 		return 0, false
 	} else if err != nil {
 		panic(err)
 	}
-	running, err := d.client.Get(ctx, fmt.Sprintf("reaper:%v:active", channelid)).Bool()
+	running, err := d.client.Get(d.ctx, fmt.Sprintf("reaper:%v:active", channelid)).Bool()
 	if err == redis.Nil {
 		return val, false
 	} else if err != nil {
@@ -54,7 +54,7 @@ func (d *Database) CurrentReaperId(channelid string) (int, bool) {
 
 func (d *Database) LastReapTimeForUser(channelid string, gameid int, userid string) (int64, bool) {
 	last_reaped, err := d.client.Get(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:%v:last", channelid, gameid, userid),
 	).Int64()
 	if err == redis.Nil {
@@ -67,7 +67,7 @@ func (d *Database) LastReapTimeForUser(channelid string, gameid int, userid stri
 
 func (d *Database) LastToReap(channelid string, gameid int) (string, int64) {
 	last, err := d.client.XRevRangeN(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:reaplog", channelid, gameid),
 		"+",
 		"-",
@@ -84,7 +84,7 @@ func (d *Database) LastToReap(channelid string, gameid int) (string, int64) {
 }
 
 func (d *Database) GetCooldown(channelid string, gameid int) int64 {
-	val, err := d.client.Get(ctx, fmt.Sprintf("reaper:%v:%v:cooldown", channelid, gameid)).Int64()
+	val, err := d.client.Get(d.ctx, fmt.Sprintf("reaper:%v:%v:cooldown", channelid, gameid)).Int64()
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func (d *Database) GetCooldown(channelid string, gameid int) int64 {
 }
 
 func (d *Database) GetWincond(channelid string, gameid int) int64 {
-	wincond, err := d.client.Get(ctx, fmt.Sprintf("reaper:%v:%v:wincond", channelid, gameid)).Int64()
+	wincond, err := d.client.Get(d.ctx, fmt.Sprintf("reaper:%v:%v:wincond", channelid, gameid)).Int64()
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +102,7 @@ func (d *Database) GetWincond(channelid string, gameid int) int64 {
 func (d *Database) GetTheLeader(channelid string, gameid int) *redis.Z {
 	// take the first from the leaderboard
 	leader, err := d.client.ZRevRangeWithScores(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:leaderboard", channelid, gameid),
 		0,
 		0,
@@ -127,7 +127,7 @@ Returns the leaderboard, the game item used, and any errors.
 func (d *Database) GetLeaderBoard(channelid string, gameid int) ([]LeaderBoardItem, error) {
 	// take the first from the leaderboard
 	leaders, err := d.client.ZRevRangeWithScores(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:leaderboard", channelid, gameid),
 		0,
 		19,
@@ -161,7 +161,7 @@ func (d *Database) GetOneScore(channelid string, gameid int, userid string) (Ran
 		return RankResponse{}, errors.New("No such game found!")
 	}
 	rank, err := d.client.ZRevRank(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:leaderboard", channelid, gameid),
 		userid,
 	).Result()
@@ -173,7 +173,7 @@ func (d *Database) GetOneScore(channelid string, gameid int, userid string) (Ran
 	}
 
 	scores, err := d.client.ZMScore(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:leaderboard", channelid, gameid),
 		userid,
 	).Result()
@@ -200,23 +200,23 @@ func (d *Database) InitReaper(channelid string, wincond int64, cooldown int64) (
 		return 0, false
 	}
 	newgameid += 1
-	err := d.client.Set(ctx, fmt.Sprintf("reaper:%v:active", channelid), true, 0).Err()
+	err := d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:active", channelid), true, 0).Err()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = d.client.Set(ctx, fmt.Sprintf("reaper:%v:latest", channelid), newgameid, 0).Err()
+	err = d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:latest", channelid), newgameid, 0).Err()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = d.client.Set(ctx, fmt.Sprintf("reaper:%v:%v:wincond", channelid, newgameid), wincond, 0).Err()
+	err = d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:%v:wincond", channelid, newgameid), wincond, 0).Err()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = d.client.Set(ctx, fmt.Sprintf("reaper:%v:%v:cooldown", channelid, newgameid), cooldown, 0).Err()
+	err = d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:%v:cooldown", channelid, newgameid), cooldown, 0).Err()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = d.client.XAdd(ctx, &redis.XAddArgs{
+	err = d.client.XAdd(d.ctx, &redis.XAddArgs{
 		Stream: fmt.Sprintf("reaper:%v:%v:reaplog", channelid, newgameid),
 		Values: map[string]interface{}{
 			"userid": "puremoot",
@@ -234,13 +234,13 @@ func (d *Database) CancelReaper(channelid string) (int, bool) {
 	if !running {
 		return 0, false
 	}
-	d.client.Set(ctx, fmt.Sprintf("reaper:%v:active", channelid), false, 0)
+	d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:active", channelid), false, 0)
 	return gameid, true
 }
 
 func (d *Database) IncrementFreeReap(userid string, channelid string, gameid int) error {
 	return d.client.Incr(
-		ctx,
+		d.ctx,
 		fmt.Sprintf(
 			"reaper:%v:%v:%v:freereaps",
 			channelid,
@@ -252,7 +252,7 @@ func (d *Database) IncrementFreeReap(userid string, channelid string, gameid int
 
 func (d *Database) DecrementFreeReap(userid string, channelid string, gameid int) error {
 	return d.client.Decr(
-		ctx,
+		d.ctx,
 		fmt.Sprintf(
 			"reaper:%v:%v:%v:freereaps",
 			channelid,
@@ -269,16 +269,16 @@ func (d *Database) FreeReapCount(userid string, channelid string, gameid int) in
 		gameid,
 		userid,
 	)
-	reaps, err := d.client.Get(ctx, key).Int()
+	reaps, err := d.client.Get(d.ctx, key).Int()
 	if err != nil {
 		if err == redis.Nil {
-			d.client.Set(ctx, key, 0, 0).Err()
+			d.client.Set(d.ctx, key, 0, 0).Err()
 		} else {
 			log.Println("Unexpected Error!", err.Error())
 		}
 	}
 	if reaps < 0 {
-		d.client.Set(ctx, key, 0, 0).Err()
+		d.client.Set(d.ctx, key, 0, 0).Err()
 		return 0
 	}
 	return reaps
@@ -407,7 +407,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	// free reaps don't affect cooldown
 	if !freeReapUsed {
 		err := d.client.Set(
-			ctx,
+			d.ctx,
 			fmt.Sprintf("reaper:%v:%v:%v:last", channelid, gameid, userid),
 			timenow.UnixMilli(),
 			0,
@@ -435,7 +435,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	}
 
 	// add it to the streams.
-	err := d.client.XAdd(ctx, &redis.XAddArgs{
+	err := d.client.XAdd(d.ctx, &redis.XAddArgs{
 		Stream: fmt.Sprintf("reaper:%v:%v:reaplog", channelid, gameid),
 		Values: map[string]interface{}{
 			"userid": userid,
@@ -446,7 +446,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	}
 	// add it to the scoreboard.
 	err = d.client.ZAddArgsIncr(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("reaper:%v:%v:leaderboard", channelid, gameid),
 		redis.ZAddArgs{
 			Members: []redis.Z{
@@ -464,7 +464,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	wincond := d.GetWincond(channelid, gameid)
 	if leader != nil {
 		if leader.Score >= float64(wincond) {
-			err := d.client.Set(ctx, fmt.Sprintf("reaper:%v:active", channelid), false, 0).Err()
+			err := d.client.Set(d.ctx, fmt.Sprintf("reaper:%v:active", channelid), false, 0).Err()
 			if err != nil {
 				log.Fatalln(err)
 			}

@@ -12,10 +12,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var ctx = context.Background()
-
 type Database struct {
 	client *redis.Client
+	ctx    context.Context
 }
 
 func InitDatabase() *Database {
@@ -31,11 +30,12 @@ func InitDatabase() *Database {
 	})
 	return &Database{
 		client: rdb,
+		ctx:    context.Background(),
 	}
 }
 
 func (d *Database) GetString(key string) (string, bool) {
-	val, err := d.client.Get(ctx, key).Result()
+	val, err := d.client.Get(d.ctx, key).Result()
 	if err == redis.Nil {
 		return "", false
 	} else if err != nil {
@@ -45,11 +45,11 @@ func (d *Database) GetString(key string) (string, bool) {
 }
 
 func (d *Database) SetString(key string, val string) error {
-	return d.client.Set(ctx, key, val, 0).Err()
+	return d.client.Set(d.ctx, key, val, 0).Err()
 }
 
 func (d *Database) GetBool(key string) (bool, bool) {
-	val, err := d.client.Get(ctx, key).Bool()
+	val, err := d.client.Get(d.ctx, key).Bool()
 	if err == redis.Nil {
 		return false, false
 	} else if err != nil {
@@ -59,7 +59,7 @@ func (d *Database) GetBool(key string) (bool, bool) {
 }
 
 func (d *Database) SetBool(key string, val bool) error {
-	return d.client.Set(ctx, key, val, 0).Err()
+	return d.client.Set(d.ctx, key, val, 0).Err()
 }
 
 func (d *Database) UsernameFromId(userId string) (string, error) {
@@ -81,7 +81,7 @@ func (d *Database) UsernameFromId(userId string) (string, error) {
 		if err != nil {
 			panic(err)
 		}
-		d.client.Set(ctx, fmt.Sprintf("userid:%v", userId), username, cache_time)
+		d.client.Set(d.ctx, fmt.Sprintf("userid:%v", userId), username, cache_time)
 	}
 	return username, nil
 }
@@ -105,7 +105,7 @@ func (d *Database) ChannelFromId(channelId string) (string, error) {
 		if err != nil {
 			panic(err)
 		}
-		d.client.Set(ctx, fmt.Sprintf("channelid:%v", channelId), channelname, cache_time)
+		d.client.Set(d.ctx, fmt.Sprintf("channelid:%v", channelId), channelname, cache_time)
 	}
 	return channelname, nil
 }

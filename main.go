@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -16,20 +15,14 @@ var (
 	db *Database
 )
 
-var (
-	cleanup = flag.Bool("cleanup", false, "do we delete all application commands after the bot exits?")
-)
-
 func init() {
-	flag.Parse()
 	var err error
 	dg, err = discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
 		log.Fatalln(err)
 	}
-}
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentGuilds | discordgo.IntentGuildMembers
 
-func init() {
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
 			handler(s, i)
@@ -38,7 +31,6 @@ func init() {
 	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentGuilds | discordgo.IntentGuildMembers
 }
 
 func main() {
@@ -77,18 +69,4 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	log.Println("Press Ctrl+C to exit")
 	<-stop
-	if *cleanup {
-		// remove all commands.
-		commands, err := dg.ApplicationCommands(dg.State.User.ID, "")
-		if err != nil {
-			log.Panicf("Cannot get Application Commands: %v", err)
-		}
-		for _, v := range commands {
-			err := dg.ApplicationCommandDelete(dg.State.User.ID, "", v.ID)
-			if err != nil {
-				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
-			}
-		}
-	}
-	log.Println("Graceful Shutdown")
 }

@@ -47,7 +47,7 @@ func (d *Database) SetPuremootRole(puremootRole string, guildId string, roleId s
 
 func (d *Database) UnsetPuremootRole(puremootRole string, guildId string) error {
 	return d.client.Del(
-		ctx,
+		d.ctx,
 		fmt.Sprintf("%v:%v", puremootRole, guildId),
 	).Err()
 }

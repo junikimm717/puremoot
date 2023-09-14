@@ -8,10 +8,17 @@ const {name, admin} = Astro.props
 
 <div class="p-1 bg-gray-900 rounded-xl m-2 block max-w-4xl transition-all focus:-translate-y-0.5 hover:-translate-y-0.5 duration-300">
   <div class="flex justify-between p-1 flex-wrap">
-    <span class={"flex items-center font-mono mx-2 p-1 rounded-lg text-sm font-bold text-white" + " " + (admin ? "bg-red-900" : "bg-gray-800")}>
-      {name}
+    <span class="flex justify-start flex-wrap">
+      <div class="my-1 m-0 p-0 hidden sm:block">
+        <img src="/logo2.jpg" width="30" class="rounded-full inline-block m-0" />
+      </div>
+      <div class="flex items-center">
+        <span class={"inline-block font-mono mx-2 p-1 rounded-lg text-xs sm:text-sm font-bold text-white break-all" + " " + (admin ? "bg-red-900" : "bg-gray-800")}>
+          {name}
+        </span>
+      </div>
     </span>
-    <span class="mx-2 p-1">
+    <span class="mx-2 p-1 my-0 text-sm">
     <strong>Permissions:{" "}</strong>
     {
       admin ? <span class="font-bold text-red-400">Manager</span>

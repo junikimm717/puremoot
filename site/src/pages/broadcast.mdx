@@ -5,25 +5,42 @@ title: 'Broadcast'
 
 import Command from '../components/Command.astro'
 
-# Broadcasting
+# Broadcast
 
 PureMOOt allows users to broadcast anonymous messages! When a user broadcasts a
 message, they will be assigned an ID for that channel, which makes it easy to
 distinguish between anonymous users.
 
-## Regenerate a Broadcast ID
+<Command name="/regenerate">
+Regenerate a Broadcast ID in the channel that the command was sent from
+</Command>
 
-<Command name="/regenerate"/>
+<Command name="/broadcast [message]">
+Broadcast a message in the channel that the command was sent from.
+</Command>
 
-## Broadcast a message
-<Command name="/broadcast [message]"/>
-
-## Broadcast in a new thread
-
-This feature was introduced because people could not anonymously respond to
-Discord polls in `#polls` if the corresponding thread was not already created.
-
-<Command name="/broadcast [message] [respondto] [threadname]"/>
+<Command name="/broadcast [message] [respondto] [threadname]">
+Anonymously respond to a message with link `[respondto]`, creaing a new thread in the process.
 
 - `[respondto]` is the message link for the message that you would like to respond to.
 - `[threadname]` is an optional argument.
+
+**Note**: This feature was introduced because people could not anonymously respond to
+Discord polls in `#polls` if the corresponding thread was not already created.
+</Command>
+
+
+## Bans
+
+PureMOOt managers can ban users from broadcasting in a
+channel if it results in abuse/spam/etc.
+
+<Command name="/pmmanager bban" admin={true}>
+Ban anonymous broadcasting on this channel.
+</Command>
+<Command name="/pmmanager ballow" admin={true}>
+Allow anonymous broadcasting on this channel.
+</Command>
+<Command name="/pmmanager bpermitted">
+See if broadcasting is permitted (non-admin)
+</Command>

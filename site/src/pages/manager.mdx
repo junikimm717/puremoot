@@ -9,11 +9,12 @@ import Command from '../components/Command.astro'
 
 ## Randomized DM's
 
-The main function of PureMOOt! When a manager uses the `/puremoot` command,
-PureMOOt will generate a random pairing of people with the `cow` role. Use as
-shown below:
 
-<Command name="/puremoot [day]" admin={true} /> where it is the `[day]`th day that DM assignments are being handed out.
+<Command name="/puremoot [day]" admin={true}> 
+The main function of PureMOOt! When a manager uses the `/puremoot` command on
+the `[day]`th day, PureMOOt will generate a random permutation of people that
+have the "cow" internal role.
+</Command>
 
 ## Internal roles
 
@@ -26,22 +27,15 @@ PureMOOt has two internal roles that it keeps track of:
 - Anyone who is a "cow" will be assigned to randomized DM's.
 
 The corresponding commands are as follows:
-- <Command name="/pmmanager set [roletype] [discord role]" admin={true} /> - set the internal role `[roletype]`
-  (which is either "manager" or "cow") to correspond with anyone who holds the
-  `[discord role]` role.
-- <Command name="/pmmanager unset [roletype]" admin={true} /> - set the internal role `[roletype]` back to
-  its default as described above.
-- <Command name="/pmmanager get [roletype]" /> - see the discord role that corresponds to the
-  internal role `[roletype]`
 
-## Bans
+<Command name="/pmmanager set [roletype] [discord role]" admin={true}> 
+set the internal role `[roletype]` (which is either "manager" or "cow") to correspond with anyone who holds the `[discord role]` role.
+</Command>
 
-PureMOOt allows managers to ban users from reaping or anonymously broadcasting.
+<Command name="/pmmanager unset [roletype]" admin={true}> 
+set the internal role `[roletype]` back to its default as described above.
+</Command>
 
-- <Command name="/pmmanager bban" admin={true} /> - ban anonymous broadcasting on this channel.
-- <Command name="/pmmanager ballow" admin={true} /> - allow anonymous broadcasting on this channel.
-- <Command name="/pmmanager bpermitted" /> - see if broadcasting is permitted (non-admin)
-
-- <Command name="/pmmanager rban [user]" admin={true} /> - ban this user from reaping on this channel
-- <Command name="/pmmanager rallow [user]" admin={true} /> - allow this user to reap on this channel.
-- <Command name="/pmmanager rpermitted [user]" /> - check if this user is allowed to reap on this channel.
+<Command name="/pmmanager get [roletype]"> 
+see the discord role that corresponds to the internal role `[roletype]`
+</Command>

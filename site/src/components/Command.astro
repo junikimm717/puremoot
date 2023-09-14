@@ -6,6 +6,20 @@ interface Props {
 const {name, admin} = Astro.props
 ---
 
-<span class={"font-mono bg-black text-white mx-2 p-1 rounded-lg text-md font-bold" + " " + (admin ? "bg-red-800" : "")}>
-  {name}
-</span>
+<div class="p-1 bg-gray-900 rounded-xl m-2 block max-w-4xl transition-all focus:-translate-y-0.5 hover:-translate-y-0.5 duration-300">
+  <div class="flex justify-between p-1 flex-wrap">
+    <span class={"flex items-center font-mono mx-2 p-1 rounded-lg text-sm font-bold text-white" + " " + (admin ? "bg-red-900" : "bg-gray-800")}>
+      {name}
+    </span>
+    <span class="mx-2 p-1">
+    <strong>Permissions:{" "}</strong>
+    {
+      admin ? <span class="font-bold text-red-400">Manager</span>
+      : <span class="font-bold text-gray-400">Normal User</span>
+    }
+    </span>
+  </div>
+  <p>
+    <slot/>
+  </p>
+</div>

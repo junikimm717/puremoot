@@ -8,21 +8,21 @@ const links = [
 ---
 
 <nav class="flex flex-row justify-start md:justify-between w-full content-center p-4 text-base mb-5">
-  <div class="font-mono text-pnk font-bold hidden md:block">
+  <div class="font-mono text-pnk hidden md:flex md:items-center">
     <a href="/">
-      PureMOOt.go
+      puremoot.go
     </a>
   </div>
-  <div>
+  <div class="font-bold">
     {
       links.map(
         (link) =>
           <span class={
             "m-2 group transition-all"
           }>
-            <a href={"/" + link.href} class="inline-block">
+            <a href={"/" + link.href} class="inline-block justify-center">
               {link.name}
-              <span class="block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-pink-600"></span>
+              <span class="block max-w-0 group-focus:max-w-full group-hover:max-w-full transition-all duration-300 h-0.5 bg-pink-600"></span>
             </a>
           </span>
       )
@@ -33,7 +33,7 @@ const links = [
     }>
       <a href="https://github.com/junikimm717/puremoot" class="inline-block" target="_blank">
         GitHub
-        <span class="block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-pink-600"></span>
+        <span class="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-pink-600"></span>
       </a>
     </span>
   </div>

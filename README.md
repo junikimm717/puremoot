@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/cb0773c9-7d6a-48b9-bdbb-428f6e4359ae/deploy-status)](https://app.netlify.com/sites/rococo-genie-d49178/deploys)
+
 # PureMOOt
 
 This is a version of permoot (A discord bot in the Unofficial MOP 2022 Server)

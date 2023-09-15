@@ -317,7 +317,7 @@ func FreeReapRng() bool {
 	if err != nil {
 		panic(err)
 	}
-	return number.Int64() < int64(20)
+	return number.Int64() < int64(40)
 }
 
 /*
@@ -401,8 +401,6 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	if !running {
 		return ReapOutput{}, errors.New("There is no active game of reaper. Ask the admins.")
 	}
-	// removed for testing purposes.
-	//_, lastreaptime := d.LastToReap(channelid, gameid)
 	lastreaper, lastreaptime := d.LastToReap(channelid, gameid)
 	if userid == lastreaper {
 		if d.FreeReapCount(userid, channelid, gameid) <= 0 {
@@ -423,7 +421,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			if d.FreeReapCount(userid, channelid, gameid) <= 0 {
 				return ReapOutput{}, fmt.Errorf(
 					"You may not reap again until %v",
-					fmt.Sprintf("<t:%v>", (userlastreap)/1000+cooldown),
+					fmt.Sprintf("<t:%v:T>", (userlastreap)/1000+cooldown),
 				)
 			} else {
 				freeReapUsed = true
@@ -504,7 +502,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{
 				MilliSeconds:      score,
 				Winner:            &winner,
-				ReapAgain:         fmt.Sprintf("<t:%v>", userlastreap/1000+cooldown),
+				ReapAgain:         fmt.Sprintf("<t:%v:T>", userlastreap/1000+cooldown),
 				GameId:            gameid,
 				FreeReapUsed:      freeReapUsed,
 				FreeReap:          freeReapGained,
@@ -514,7 +512,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	}
 	return ReapOutput{
 		MilliSeconds:      score,
-		ReapAgain:         fmt.Sprintf("<t:%v>", userlastreap/1000+cooldown),
+		ReapAgain:         fmt.Sprintf("<t:%v:T>", userlastreap/1000+cooldown),
 		GameId:            gameid,
 		FreeReapUsed:      freeReapUsed,
 		FreeReap:          freeReapGained,
@@ -684,7 +682,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		respond(
 			s,
 			i,
-			fmt.Sprintf("%v last reaped at <t:%v>", username, lastreaptime/1000),
+			fmt.Sprintf("%v last reaped at <t:%v:T>", username, lastreaptime/1000),
 		)
 	},
 	"when": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -705,7 +703,7 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			respond(
 				s,
 				i,
-				fmt.Sprintf("You may reap at <t:%v>. You have %d free reaps.", time, freereaps),
+				fmt.Sprintf("You may reap at <t:%v:T>. You have %d free reaps.", time, freereaps),
 			)
 		}
 	},

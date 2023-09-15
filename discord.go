@@ -314,7 +314,7 @@ var (
 					)
 					return
 				}
-				medals := []string{":first_place:", ":second_place:, :third_place:"}
+				medals := []string{":first_place:", ":second_place:", ":third_place:"}
 				usernames := []string{}
 				ranks := []string{}
 				scores := []string{}

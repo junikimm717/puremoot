@@ -267,17 +267,18 @@ var (
 			Handlers for the reaper game
 		*/
 		"reap": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			deferred(s, i)
 			if i.Member == nil {
-				respond(s, i, "i.Member field not present. Cannot proceed")
+				followupRespond(s, i, "i.Member field not present. Cannot proceed")
 				return
 			}
 			if db.IsReaperUserBanned(i.Member.User.ID, i.ChannelID) {
-				respond(s, i, "The Admins have banned you from reaping!")
+				followupRespond(s, i, "The Admins have banned you from reaping!")
 				return
 			}
 			score, err := db.Reap(i.Member.User.ID, i.ChannelID)
 			if err != nil {
-				respond(s, i, "Failed to Reap! "+err.Error())
+				followupRespond(s, i, "Failed to Reap! "+err.Error())
 				return
 			}
 
@@ -289,18 +290,17 @@ var (
 				freeReapMessageComps = append(freeReapMessageComps, "Used a Free Reap!")
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf(
-						"%v reaped for %v%v Their cooldown expires at %v",
-						i.Member.User.Username,
-						milliToTime(score.MilliSeconds),
-						score.MultiplierMessage,
-						score.ReapAgain,
-					) + "\n" + strings.Join(freeReapMessageComps, " "),
-				},
-			})
+			s.ChannelMessageSend(i.ChannelID,
+				fmt.Sprintf(
+					"%v reaped for %v%v Their cooldown expires at %v",
+					i.Member.User.Username,
+					milliToTime(score.MilliSeconds),
+					score.MultiplierMessage,
+					score.ReapAgain,
+				)+"\n"+strings.Join(freeReapMessageComps, " "),
+			)
+			followupRespond(s, i, "Successfully reaped!")
+
 			if score.Winner != nil {
 				username, err := db.UsernameFromId(*(score.Winner))
 				if username == "" || err != nil {
@@ -308,10 +308,7 @@ var (
 				}
 				leaderboard, err := db.GetLeaderBoard(i.ChannelID, score.GameId)
 				if err != nil {
-					s.ChannelMessageSend(
-						i.ChannelID,
-						fmt.Sprintf("Could not send embed! '%v'", err),
-					)
+					followupRespond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
 					return
 				}
 				medals := []string{":first_place:", ":second_place:", ":third_place:"}
@@ -347,10 +344,7 @@ var (
 				})
 
 				if err != nil {
-					s.ChannelMessageSend(
-						i.ChannelID,
-						fmt.Sprintf("Could not send embed! '%v'", err),
-					)
+					followupRespond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
 					return
 				}
 			}
@@ -388,18 +382,19 @@ var (
 			Commands related to broadcast functionality. People are assigned randomized ID's that they can regenerate.
 		*/
 		"broadcast": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			deferred(s, i)
 			options := extractInteractionOptions(i.ApplicationCommandData().Options)
 			if i.Member == nil {
-				respond(s, i, "[developer] The i.Member field is not present. Cannot broadcast!")
+				followupRespond(s, i, "[developer] The i.Member field is not present. Cannot broadcast!")
 			}
 			if !db.BroadcastAllowed(i.ChannelID) {
-				respond(s, i, "Anonymous broadcasting has been banned on this channel!")
+				followupRespond(s, i, "Anonymous broadcasting has been banned on this channel!")
 				return
 			}
 			pingRegex := regexp.MustCompile(`<@&?\d+>|@[0-9,a-z,A-Z]+`)
 			message := options["message"].StringValue()
 			if pingRegex.Match([]byte(message)) {
-				respond(s, i, "Broadcast refused! Message contains a ping!")
+				followupRespond(s, i, "Broadcast refused! Message contains a ping!")
 				return
 			}
 
@@ -408,9 +403,9 @@ var (
 				broadcastMessage, id := db.BroadcastMessage(i.Member.User.ID, i.ChannelID, message)
 				_, err := s.ChannelMessageSend(i.ChannelID, broadcastMessage)
 				if err != nil {
-					respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
+					followupRespond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
 				} else {
-					respond(s, i, fmt.Sprintf("Message successfully broadcasted! Your ID is %v", id))
+					followupRespond(s, i, fmt.Sprintf("Message successfully broadcasted! Your ID is %v", id))
 				}
 				return
 			}
@@ -419,30 +414,30 @@ var (
 			match := messageLinkRegex.FindStringSubmatch(respondto)
 
 			if len(match) != 4 {
-				respond(s, i, fmt.Sprintf("Invalid Message Link!"))
+				followupRespond(s, i, fmt.Sprintf("Invalid Message Link!"))
 				return
 			}
 
 			if i.ChannelID != match[2] {
 				matchchannel, err := db.ChannelFromId(match[2])
 				if err != nil {
-					respond(s, i, err.Error())
+					followupRespond(s, i, err.Error())
 					return
 				}
 				currentchannel, err := db.ChannelFromId(i.ChannelID)
 				if err != nil {
-					respond(s, i, err.Error())
+					followupRespond(s, i, err.Error())
 					return
 				}
-				respond(s, i, fmt.Sprintf("Message belongs to channel %v but you are in %v", matchchannel, currentchannel))
+				followupRespond(s, i, fmt.Sprintf("Message belongs to channel %v but you are in %v", matchchannel, currentchannel))
 				return
 			}
 			messagetorespond, err := dg.ChannelMessage(match[2], match[3])
 			if err != nil {
-				respond(s, i, fmt.Sprintf(err.Error()))
+				followupRespond(s, i, fmt.Sprintf(err.Error()))
 				return
 			} else if messagetorespond == nil {
-				respond(s, i, "The message you were trying to respond to is nil!")
+				followupRespond(s, i, "The message you were trying to respond to is nil!")
 			}
 
 			threadnameoption, exists := options["threadname"]
@@ -463,16 +458,16 @@ var (
 				60*24*3,
 			)
 			if err != nil {
-				respond(s, i, fmt.Sprintf("Failed to create new thread! %v", err.Error()))
+				followupRespond(s, i, fmt.Sprintf("Failed to create new thread! %v", err.Error()))
 				return
 			}
 
 			broadcastMessage, id := db.BroadcastMessage(i.Member.User.ID, thread.ID, message)
 			_, err = s.ChannelMessageSend(thread.ID, broadcastMessage)
 			if err != nil {
-				respond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
+				followupRespond(s, i, fmt.Sprintf("Could not broadcast message! '%v'", err))
 			} else {
-				respond(s, i,
+				followupRespond(s, i,
 					fmt.Sprintf(
 						"Message successfully broadcasted into thread 'pureMOOt-%v'! Your ID is %v",
 						threadname,
@@ -495,9 +490,10 @@ var (
 			if !forceManager(s, i) {
 				return
 			}
+			deferred(s, i)
 			cows, err := getCows(s, i)
 			if err != nil {
-				respond(s, i, fmt.Sprintf("Error getting cows! %v", err))
+				followupRespond(s, i, fmt.Sprintf("Error getting cows! %v", err))
 				return
 			}
 
@@ -510,16 +506,15 @@ var (
 				Color:       0xFFD700,
 			})
 			if err != nil {
-				respond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
+				followupRespond(s, i, fmt.Sprintf("Could not send embed! '%v'", err))
 				return
 			}
 
-			respond(s, i, "pureMOOtation generated!")
 			puremootation := PureMOOt(cows)
 			for _, pair := range puremootation {
 				num_spaces := 70 - (nickNameLength(pair[0]) + nickNameLength(pair[1]))
 				prefix_spaces := 1 + rand.Intn(num_spaces-1)
-				s.ChannelMessageSend(
+				_, err := s.ChannelMessageSend(
 					i.ChannelID,
 					fmt.Sprintf(
 						"||%v<@%v> <@%v>%v||",
@@ -529,7 +524,12 @@ var (
 						strings.Repeat(" ", 2*(num_spaces-prefix_spaces)),
 					),
 				)
+				if err != nil {
+					followupRespond(s, i, "Error! "+err.Error())
+					return
+				}
 			}
+			followupRespond(s, i, "pureMOOtation generated!")
 		},
 	}
 )

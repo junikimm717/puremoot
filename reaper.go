@@ -524,20 +524,20 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 
 var ReaperHandlers = map[string]SubcommandHandler{
 	"leaderboard": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
+		deferred(s, i)
 		options := extractInteractionOptions(opts)
 		currentid, activegame := db.CurrentReaperId(i.ChannelID)
 		var leaderboard []LeaderBoardItem
 		leaderboardgameid := int64(0)
 		if gameid, ok := options["gameid"]; ok {
 			if currentid == 0 || gameid.IntValue() > int64(currentid) {
-				respond(s, i, "No such round of Reaper!")
+				followupRespond(s, i, "No such round of Reaper!")
 				return
 			}
-			respond(s, i, "Message Received! Compiling Leaderboard...")
 			b, err := db.GetLeaderBoard(i.ChannelID, int(gameid.IntValue()))
 			if err != nil {
-				s.ChannelMessageSend(
-					i.ChannelID,
+				followupRespond(
+					s, i,
 					"Error generating Leaderboard! "+err.Error(),
 				)
 				return
@@ -546,14 +546,14 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			leaderboardgameid = gameid.IntValue()
 		} else {
 			if !activegame {
-				respond(s, i, "No active game of reaper!")
+				followupRespond(s, i, "No active game of reaper!")
 				return
 			}
-			respond(s, i, "Message Received! Compiling Leaderboard...")
+			followupRespond(s, i, "Message Received! Compiling Leaderboard...")
 			b, err := db.GetLeaderBoard(i.ChannelID, currentid)
 			if err != nil {
-				s.ChannelMessageSend(
-					i.ChannelID,
+				followupRespond(
+					s, i,
 					"Error generating Leaderboard! "+err.Error(),
 				)
 				return
@@ -586,7 +586,9 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			Color: 0xFFD700,
 		})
 		if err != nil {
-			respond(s, i, fmt.Sprintf("Error Sending Message! %v", err.Error()))
+			followupRespond(s, i, fmt.Sprintf("Error Sending Message! %v", err.Error()))
+		} else {
+			followupRespond(s, i, "Successfully generated leaderboard!")
 		}
 	},
 	"score": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -607,12 +609,13 @@ var ReaperHandlers = map[string]SubcommandHandler{
 		if !forceManager(s, i) {
 			return
 		}
+		deferred(s, i)
 		options := extractInteractionOptions(opts)
 		win := options["win"].IntValue()
 		cooldown := options["cooldown"].IntValue()
 		gameId, created := db.InitReaper(i.ChannelID, win, cooldown)
 		if !created {
-			respond(s, i, "The ongoing reaper round must end before you can create a new round!")
+			followupRespond(s, i, "The ongoing reaper round must end before you can create a new round!")
 			return
 		}
 		_, err := s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
@@ -621,9 +624,9 @@ var ReaperHandlers = map[string]SubcommandHandler{
 			Color:       0xFFD700,
 		})
 		if err != nil {
-			respond(s, i, fmt.Sprintf("Error Sending Message! %v", err))
+			followupRespond(s, i, fmt.Sprintf("Error Sending Message! %v", err))
 		} else {
-			respond(s, i, fmt.Sprintf("Reaper Round %v Successfully Created", gameId))
+			followupRespond(s, i, fmt.Sprintf("Reaper Round %v Successfully Created", gameId))
 		}
 	},
 	"cancel": func(s *discordgo.Session, i *discordgo.InteractionCreate, opts []*discordgo.ApplicationCommandInteractionDataOption) {

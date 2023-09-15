@@ -15,6 +15,14 @@ func nickNameLength(m *discordgo.Member) int {
 	}
 }
 
+func deferred(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
 func respond(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -22,6 +30,13 @@ func respond(s *discordgo.Session, i *discordgo.InteractionCreate, message strin
 			Content: message,
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
+	})
+}
+
+func followupRespond(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
+	s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		Content: message,
+		Flags:   discordgo.MessageFlagsEphemeral,
 	})
 }
 

@@ -292,8 +292,9 @@ var (
 
 			s.ChannelMessageSend(i.ChannelID,
 				fmt.Sprintf(
-					"%v reaped for %v%v Their cooldown expires at %v",
+					"%v reaped at <t:%v:T> and gained %v%v Their cooldown expires at %v",
 					i.Member.User.Username,
+					score.ReapedAt,
 					milliToTime(score.MilliSeconds),
 					score.MultiplierMessage,
 					score.ReapAgain,

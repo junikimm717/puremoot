@@ -3,7 +3,7 @@ layout: ../layouts/main.astro
 title: 'Broadcast'
 ---
 
-import Command from '../components/Command.astro'
+import Command from '../components/Command.astro';
 
 # Broadcast
 
@@ -11,12 +11,12 @@ PureMOOt allows users to broadcast anonymous messages! When a user broadcasts a
 message, they will be assigned an ID for that channel, which makes it easy to
 distinguish between anonymous users.
 
-<Command name="/regenerate">
-Regenerate a Broadcast ID in the channel that the command was sent from
+<Command name='/regenerate'>
+	Regenerate a Broadcast ID in the channel that the command was sent from.
 </Command>
 
-<Command name="/broadcast [message]">
-Broadcast a message in the channel that the command was sent from.
+<Command name='/broadcast [message]'>
+	Broadcast a message in the channel that the command was sent from.
 </Command>
 
 <Command name="/broadcast [message] [respondto] [threadname]">
@@ -25,22 +25,22 @@ Anonymously respond to a message with link `[respondto]`, creaing a new thread i
 - `[respondto]` is the message link for the message that you would like to respond to.
 - `[threadname]` is an optional argument.
 
-**Note**: This feature was introduced because people could not anonymously respond to
+This feature was introduced because people could not anonymously respond to
 Discord polls in `#polls` if the corresponding thread was not already created.
-</Command>
 
+</Command>
 
 ## Bans
 
 PureMOOt managers can ban users from broadcasting in a
 channel if it results in abuse/spam/etc.
 
-<Command name="/pmmanager bban" admin={true}>
-Ban anonymous broadcasting on this channel.
+<Command name='/pmmanager bban' admin={true}>
+	Ban anonymous broadcasting on the channel where the command was sent.
 </Command>
-<Command name="/pmmanager ballow" admin={true}>
-Allow anonymous broadcasting on this channel.
+<Command name='/pmmanager ballow' admin={true}>
+	Allow anonymous broadcasting on the channel where the command was sent.
 </Command>
-<Command name="/pmmanager bpermitted">
-See if broadcasting is permitted (non-admin)
+<Command name='/pmmanager bpermitted'>
+	See if broadcasting is permitted on the channel where the command was sent.
 </Command>

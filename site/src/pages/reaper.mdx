@@ -3,7 +3,7 @@ layout: ../layouts/main.astro
 title: 'Reaper'
 ---
 
-import Command from '../components/Command.astro'
+import Command from '../components/Command.astro';
 
 # Reaper
 
@@ -11,66 +11,67 @@ Reaper is a game of strategy and patience where you try to gain as much time
 as possible. It originated from [AoPS](https://aops.com).
 
 1. You may reap only if either condition is satisfied:
-    1. You were not the last person to reap and your cooldown expired, **or**
-    2. You have a free reap, in which case that free reap will be used up.
-2. When you reap, your score will usually increase by the number of seconds since the previous reap. 
+   1. You were not the last person to reap and your cooldown expired, **or**
+   2. You have a free reap, in which case that free reap will be used up.
+2. When you reap, your score will usually increase by the number of seconds since the previous reap.
 3. Every time you reap, you have a 4% chance of getting a free reap. Free reaps
    can be used whenever you want with no restrictions.
 4. Every time you reap, the number of seconds you reaped may randomly multiply.
    Reaper multipliers vanish if **a user reaped for more than 1 hour**.
    Probabilities are listed below:
-   <div class="max-w-xs">
-    |**Multiplier**|**Probability**|
-    |---|---|
-    |2x|4%|
-    |3x|4%|
-    |4x|1%|
-    |5x|0.5%|
-    |8x|0.1%|
+    <div class='max-w-xs'>
+      |**Multiplier**|**Probability**|
+      |--|--|
+      |2x|4%| 
+      |3x|4%| 
+      |4x|1%|
+      |5x|0.5%| 
+      |8x|0.1%|
     </div>
 
-# Reaper Commands
+## Reaper Commands
 
 PureMOOt administers games of reaper **per channel**.
 
-<Command name="/reap"> 
-  Reap the time since the last reap! If you have a free reap and
-  you use this command when your cooldown hasn't expired or you were the last one
-  to reap, you will use up a free reap.
+<Command name='/reap'>
+	Reap the time since the last reap! If you have a free reap and you use this
+	command when your cooldown hasn't expired or you were the last one to reap,
+	you will use up a free reap.
 </Command>
-<Command name="/reaper leaderboard [gameid]">
-  Returns an embed with a pretty-printed leaderboard of the top 20 participants.
-  `[gameid]` is optional and assumed to be the round number of the currently active game.
+<Command name='/reaper leaderboard [gameid]'>
+	Returns an embed with a pretty-printed leaderboard of the top 20 participants.
+	`[gameid]` is optional and assumed to be the round number of the currently
+	active game.
 </Command>
-<Command name="/reaper when">
-  Shows when your cooldown expires and how many free reaps you have.
+<Command name='/reaper when'>
+	Shows when your cooldown expires and how many free reaps you have.
 </Command>
-<Command name="/reaper last">
-  Shows who the last person to reap was.
+<Command name='/reaper last'>Shows who the last person to reap was.</Command>
+<Command name='/reaper score [user] [gameid]'>
+	Returns the score and rank for a user in reaper round `[gameid]` on that
+	channel.
 </Command>
-<Command name="/reaper score [user] [gameid]">
-  Returns the score and rank for a user in reaper round `[gameid]` on that channel.
+<Command name='/reaper active'>
+	Returns the currently active game of reaper.
 </Command>
-<Command name="/reaper active">
-  Returns the currently active game of reaper.
+<Command name='/reaper cancel [gameid]' admin={true}>
+	Cancel the game of reaper with id `[gameid]`.
 </Command>
-<Command name="/reaper cancel [gameid]" admin={true}>
-  Cancel the game of reaper with id `[gameid]`
-</Command>
-<Command name="/reaper init [win] [cooldown]" admin={true}>
-  Create a new reaper round on a channel. `[win]` seconds to win and `[cooldown]` seconds between reaps. 
+<Command name='/reaper init [win] [cooldown]' admin={true}>
+	Create a new reaper round on a channel. `[win]` seconds to win and
+	`[cooldown]` seconds between reaps.
 </Command>
 
 ## Bans
 
 PureMOOt managers can ban any user from reaping on a channel for misconduct.
 
-<Command name="/pmmanager rban [user]" admin={true}>
-Ban this user from reaping on this channel
+<Command name='/pmmanager rban [user]' admin={true}>
+	Ban this user from reaping on this channel.
 </Command>
-<Command name="/pmmanager rallow [user]" admin={true}>
-Allow this user to reap on this channel.
+<Command name='/pmmanager rallow [user]' admin={true}>
+	Allow this user to reap on this channel.
 </Command>
-<Command name="/pmmanager rpermitted [user]">
-Check if this user is allowed to reap on this channel.
+<Command name='/pmmanager rpermitted [user]'>
+	Check if this user is allowed to reap on this channel.
 </Command>

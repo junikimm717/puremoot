@@ -3,31 +3,46 @@ layout: ../layouts/main.astro
 title: 'pureMOOt'
 ---
 
-import Team from '../components/Team.astro'
+import Team from '../components/Team.astro';
+import WithLogo from '../components/WithLogo.astro';
 
-# The Discord Bot for Lemonade Shop
+# The Discord Bot for Lemonade Shop 
 
+<WithLogo>
 Initially written in two days to compete with Tea Shop (Unofficial MOP 2022 server)'s
 Pur**r**MOOt, Pur**e**MOOt serves a vibrant community of invitees to the 2023
 Mathematical Olympiad Program (MOP)! Features
 include **randomized DM's**, **anonymous broadcasting**, and **administering
 [reaper](https://aops.com/reaper)**!
-
-# Team
-
-<div class="grid grid-cols-1 md:grid-cols-2">
-<Team name="Juni Kim" username="jkmmm3" picture="https://avatar.artofproblemsolving.com/avatar_536071.png">
-  Creator | Blue MOP 2023
-</Team>
-<Team name="Advaith Avadhanam" username="advaith7149" picture="https://avatar.artofproblemsolving.com/avatar_450822.png">
-  Lemonade Shop Owner | Black MOP 2023
-</Team>
-<Team name="Emily Yu" username="poliarn" picture="https://cdn.discordapp.com/avatars/834972148866482227/9f3464b1c3e1185879d3d49f9060c4b7.png?size=1024">
-  High Table Member | Red MOP 2023
-</Team>
-</div>
+</WithLogo>
 
 ## Discord Servers with PureMOOt
 
 - Lemonade Shop (MOP 2023 Server)
 - 2023 Mathcounts Nationals Server (added by Jiahe Liu)
+
+## Our Team
+
+<div class='grid grid-cols-1 md:grid-cols-2'>
+	<Team
+		name='Juni Kim'
+		username='jkmmm3'
+		picture='https://avatar.artofproblemsolving.com/avatar_536071.png'
+	>
+		Creator | Blue MOP 2023
+	</Team>
+	<Team
+		name='Advaith Avadhanam'
+		username='advaith7149'
+		picture='https://avatar.artofproblemsolving.com/avatar_450822.png'
+	>
+		Lemonade Shop Owner | Black MOP 2023
+	</Team>
+	<Team
+		name='Emily Yu'
+		username='poliarn'
+		picture='https://cdn.discordapp.com/avatars/834972148866482227/9f3464b1c3e1185879d3d49f9060c4b7.png?size=1024'
+	>
+		High Table Member | Red MOP 2023
+	</Team>
+</div>

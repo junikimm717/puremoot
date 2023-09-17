@@ -16,4 +16,4 @@ See [puremoot.junickim.me](https://puremoot.junickim.me)
 # Acknowledgements
 
 - Advaith Avadhanam, Lemonade Shop Dictator
-- Emily Yu, for designing the logo
+- Emily Yu and creators of permoot, for designing the Logo

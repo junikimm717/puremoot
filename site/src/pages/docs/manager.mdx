@@ -1,0 +1,65 @@
+---
+layout: ../../layouts/docs.astro
+title: 'Manager'
+---
+
+import Command from '../../components/Command.astro';
+
+# Managers
+
+## Internal roles
+
+PureMOOt has two internal roles that it keeps track of:
+
+- Anyone who is a "manager" can use all the admin commands of PureMOOt.
+  - By default, this is anyone who either:
+    1. has "administrator," or
+    2. has both "manage server" and "view audit log"
+- Anyone who is a "cow" will be assigned to randomized DM's.
+  - By default, this will correspond to any role with the name "cow" ignoring cases.
+
+The corresponding commands are as follows:
+
+<Command name='/pmmanager set [roletype] [discord role]' admin={true}>
+	Set the internal role `[roletype]` (which is either "manager" or "cow") to
+	correspond with anyone who holds the `[discord role]` role.
+</Command>
+
+<Command name='/pmmanager unset [roletype]' admin={true}>
+	Set the internal role `[roletype]` back to its default as described above.
+</Command>
+
+<Command name='/pmmanager get [roletype]'>
+	See the discord role that corresponds to the internal role `[roletype]`
+</Command>
+
+## Reaper Bans
+
+PureMOOt managers can ban any user from reaping on a channel for misconduct, which may include:
+1. Using alt accounts
+2. Using a bot to automate reaping
+
+<Command name='/pmmanager rban [user]' admin={true}>
+	Ban this user from reaping on this channel.
+</Command>
+<Command name='/pmmanager rallow [user]' admin={true}>
+	Allow this user to reap on this channel.
+</Command>
+<Command name='/pmmanager rpermitted [user]'>
+	Check if this user is allowed to reap on this channel.
+</Command>
+
+## Broadcasting Bans
+
+PureMOOt managers can ban users from broadcasting in a channel if it results in
+abuse/spam/etc.
+
+<Command name='/pmmanager bban' admin={true}>
+	Ban anonymous broadcasting on the channel where the command was sent.
+</Command>
+<Command name='/pmmanager ballow' admin={true}>
+	Allow anonymous broadcasting on the channel where the command was sent.
+</Command>
+<Command name='/pmmanager bpermitted'>
+	See if broadcasting is permitted on the channel where the command was sent.
+</Command>

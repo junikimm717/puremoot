@@ -1,9 +1,9 @@
 ---
-layout: ../layouts/main.astro
+layout: ../../layouts/docs.astro
 title: 'Reaper'
 ---
 
-import Command from '../components/Command.astro';
+import Command from '../../components/Command.astro';
 
 # Reaper
 
@@ -62,16 +62,3 @@ PureMOOt administers games of reaper **per channel**.
 	`[cooldown]` seconds between reaps.
 </Command>
 
-## Bans
-
-PureMOOt managers can ban any user from reaping on a channel for misconduct.
-
-<Command name='/pmmanager rban [user]' admin={true}>
-	Ban this user from reaping on this channel.
-</Command>
-<Command name='/pmmanager rallow [user]' admin={true}>
-	Allow this user to reap on this channel.
-</Command>
-<Command name='/pmmanager rpermitted [user]'>
-	Check if this user is allowed to reap on this channel.
-</Command>

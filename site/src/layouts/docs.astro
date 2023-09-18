@@ -1,0 +1,23 @@
+---
+import Docnav from '../components/Docnav'
+import MarkdownBody from '../components/MarkdownBody.astro'
+import Base from './base.astro'
+
+interface Props {
+  content: any;
+}
+const { content } = Astro.props;
+---
+
+<Base {content}>
+  <div class="flex flex-row flex-wrap sm:flex-nowrap my-0">
+    <div class="w-full sm:w-40 m-2 sm:my-4 flex-shrink-0">
+      <div class="sm:sticky sm:top-5">
+        <Docnav />
+      </div>
+    </div>
+    <MarkdownBody>
+      <slot />
+    </MarkdownBody>
+  </div>
+</Base>

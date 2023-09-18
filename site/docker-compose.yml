@@ -1,0 +1,9 @@
+version: '2'
+services:
+  puremoot:
+    image: junikimm717/puremoot
+    environment:
+      DISCORD_TOKEN: 'MTEzODQ0MzkyMTU4OTAyMjgxMw.GsOtLJ.tPQkWan3Kl23Bs4HJJZTI5qJU89RlQmbw2yhj0'
+    stop_signal: SIGINT
+    volumes:
+      - ./data:/data

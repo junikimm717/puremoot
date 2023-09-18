@@ -8,7 +8,7 @@ const links = [
 
 export default function Navbar() {
   return (
-    <nav className="flex flex-row justify-start sm:justify-between w-full content-center p-4 text-base">
+    <nav className="flex flex-row justify-start sm:justify-between w-full content-center my-4 mx-2 text-base">
       <div className="font-mono text-pnk hidden sm:flex sm:items-center">
         <a href="/">
           puremoot.go

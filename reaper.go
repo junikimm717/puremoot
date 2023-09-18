@@ -387,7 +387,7 @@ func Multiplier() (int64, string) {
 
 type ReapOutput struct {
 	MilliSeconds      int64
-	ReapedAt 					int64
+	ReapedAt          int64
 	ReapAgain         string
 	FreeReap          bool
 	FreeReapUsed      bool
@@ -502,7 +502,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 			return ReapOutput{
 				MilliSeconds:      score,
 				Winner:            &winner,
-				ReapedAt: 				 timenow.UnixMilli(),
+				ReapedAt:          timenow.Unix(),
 				ReapAgain:         fmt.Sprintf("<t:%v:T>", userlastreap/1000+cooldown),
 				GameId:            gameid,
 				FreeReapUsed:      freeReapUsed,
@@ -514,7 +514,7 @@ func (d *Database) Reap(userid string, channelid string) (ReapOutput, error) {
 	return ReapOutput{
 		MilliSeconds:      score,
 		ReapAgain:         fmt.Sprintf("<t:%v:T>", userlastreap/1000+cooldown),
-		ReapedAt: 				 timenow.UnixMilli(),
+		ReapedAt:          timenow.Unix(),
 		GameId:            gameid,
 		FreeReapUsed:      freeReapUsed,
 		FreeReap:          freeReapGained,

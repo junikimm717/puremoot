@@ -9,7 +9,7 @@ const { content } = Astro.props;
 
 <style>
   .clamp {
-    width: clamp(10%, 1000px, 92%);
+    width: clamp(10%, 1000px, 90%);
     display: block;
   }
   html {
@@ -17,6 +17,9 @@ const { content } = Astro.props;
   }
   body {
     font-family: Inter, sans-serif;
+  }
+  pre {
+    overflow:scroll;
   }
 </style>
 

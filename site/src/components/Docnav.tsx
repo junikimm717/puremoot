@@ -13,14 +13,14 @@ export default function Docnav() {
   return (
     <>
       <h3 className="mx-2 text-2xl font-bold my-2 text-gld"><a href="/docs">Docs</a></h3>
-      <div className="flex-wrap flex">
+      <div className="">
       {
         links.map(
           (link, i) =>
             <div className={
               "mx-2 my-0 group transition-all text-white"
             } key={i}>
-              <a href={"/docs/" + link.href} className="inline-block justify-center font-bold">
+              <a href={"/docs/" + link.href} className="inline-block justify-center">
                 {link.name}
                 <span className="block max-w-0 group-focus:max-w-full group-hover:max-w-full transition-all duration-300 h-0.5 bg-pink-600"></span>
               </a>

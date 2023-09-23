@@ -1,6 +1,6 @@
 ---
 layout: ../../layouts/docs.astro
-title: 'Documentation'
+title: "Documentation"
 ---
 
 # Getting Started
@@ -10,26 +10,26 @@ experience for both managers and server members!
 
 ## Inviting PureMOOt
 
-PureMOOt is currently a private discord bot. You should contact Juni and
-discuss the process of inviting it to your server!
+PureMOOt is currently a private discord bot. You should contact Juni and discuss
+the process of inviting it to your server!
 
 ## Self Hosting PureMOOt
 
 Before the steps below, you should create a new Discord bot account. Per the
-terms of the AGPL, it is best for the description of your bot to have a link
-to the source code or this website!
+terms of the AGPL, it is best for the description of your bot to have a link to
+the source code or this website!
 
 The recommended approach for running PureMOOt by yourself is through docker.
-Images will run standalone and contain the latest improvements.
-The `docker-compose.yml` file should look something like the below:
+Images will run standalone and contain the latest improvements. The
+`docker-compose.yml` file should look something like below:
 
 ```yaml
-version: '2'
+version: "2"
 services:
   puremoot:
     image: junikimm717/puremoot
     environment:
-      DISCORD_TOKEN: 'token'
+      DISCORD_TOKEN: "token"
     volumes:
       - ./saved-redis-data:/data
 ```

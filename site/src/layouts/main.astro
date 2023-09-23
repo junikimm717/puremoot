@@ -9,7 +9,9 @@ const { content } = Astro.props;
 ---
 
 <Base {content}>
-  <MarkdownBody>
-    <slot />
-  </MarkdownBody>
+  <div class="flex flex-row flex-wrap sm:flex-nowrap my-0">
+    <MarkdownBody>
+      <slot />
+    </MarkdownBody>
+  </div>
 </Base>

@@ -61,7 +61,7 @@ var (
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "day",
 					Description: "This is the nth puremootation",
-					Required:    true,
+					Required:    false,
 					MinValue:    &minValue,
 				},
 			},
@@ -500,7 +500,24 @@ var (
 
 			// send an embed explaining what to do
 			options := extractInteractionOptions(i.ApplicationCommandData().Options)
-			day := options["day"].IntValue()
+			dayOption, exists := options["day"]
+			day := 0
+			if !exists {
+				dayInCache, found := db.GetInt(
+					fmt.Sprintf("puremoot:%v:day", i.ChannelID),
+				)
+				if !found {
+					followupRespond(s, i, "Could not issue a pureMOOtation! You must manually supply a date before increments can begin.")
+					return
+				}
+				day = dayInCache + 1
+			} else {
+				day = int(dayOption.IntValue())
+			}
+			db.SetInt(
+				fmt.Sprintf("puremoot:%v:day", i.ChannelID),
+				day,
+			)
 			_, err = s.ChannelMessageSendEmbed(i.ChannelID, &discordgo.MessageEmbed{
 				Title:       fmt.Sprintf("pureMOOtation Day %v", day),
 				Description: "pureMOOt has assigned random pairs of Cows to contact each other! Make new friends!",

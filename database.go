@@ -62,6 +62,20 @@ func (d *Database) SetBool(key string, val bool) error {
 	return d.client.Set(d.ctx, key, val, 0).Err()
 }
 
+func (d *Database) GetInt(key string) (int, bool) {
+	val, err := d.client.Get(d.ctx, key).Int()
+	if err == redis.Nil {
+		return 0, false
+	} else if err != nil {
+		panic(err)
+	}
+	return val, true
+}
+
+func (d *Database) SetInt(key string, val int) error {
+	return d.client.Set(d.ctx, key, val, 0).Err()
+}
+
 func (d *Database) UsernameFromId(userId string) (string, error) {
 	username, exists := d.GetString(fmt.Sprintf("userid:%v", userId))
 	number, err := rand.Int(rand.Reader, big.NewInt(1000))

@@ -549,7 +549,6 @@ var ReaperHandlers = map[string]SubcommandHandler{
 				followupRespond(s, i, "No active game of reaper!")
 				return
 			}
-			followupRespond(s, i, "Message Received! Compiling Leaderboard...")
 			b, err := db.GetLeaderBoard(i.ChannelID, currentid)
 			if err != nil {
 				followupRespond(

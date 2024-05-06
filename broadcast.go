@@ -67,7 +67,7 @@ func (d *Database) BroadcastAllowed(channel string) bool {
 		fmt.Sprintf("broadcast-enabled:%v", channel),
 	)
 	if !exists {
-		return true
+		return false
 	}
 	return allowed
 }

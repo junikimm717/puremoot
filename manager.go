@@ -64,7 +64,23 @@ func forceManager(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
 				return true
 			}
 		}
-	} else {
+	}
+
+	// change "exists" based on whether the guild role actually exists or not.
+	roles, err := s.GuildRoles(i.GuildID)
+	if err != nil {
+		respond(s, i, fmt.Sprint("PureMOOt cannot access Discord Roles!", err));
+		return false;
+	}
+	exists = false;
+	for _, role := range roles {
+		if role.Name == manager {
+			exists = true;
+			break;
+		}
+	}
+
+	if !exists {
 		manage_audit := int64(discordgo.PermissionManageServer | discordgo.PermissionViewAuditLogs)
 		if (i.Member.Permissions&(discordgo.PermissionAdministrator) != 0) || (i.Member.Permissions&manage_audit) == manage_audit {
 			return true

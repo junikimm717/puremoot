@@ -463,6 +463,7 @@ var (
 				return
 			}
 
+			db.EnableBroadcast(thread.ID)
 			broadcastMessage, id := db.BroadcastMessage(i.Member.User.ID, thread.ID, message)
 			_, err = s.ChannelMessageSend(thread.ID, broadcastMessage)
 			if err != nil {
